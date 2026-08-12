@@ -1,0 +1,82 @@
+file_name,column_name,data_type,description,example_value,intended_use
+consultant_profiles_train.csv,consultant_id,string,Unique consultant identifier (C-###).,C-014,Primary key; join to historical_matches_train.consultant_id.
+consultant_profiles_train.csv,first_name,string,Consultant first name (synthetic).,Maria,Display only. Must NOT influence ranking (fairness requirement).
+consultant_profiles_train.csv,last_name,string,Consultant last name (synthetic).,Herrera,Display only. Must NOT influence ranking (fairness requirement).
+consultant_profiles_train.csv,location_city,string,Home base city (US).,Charlotte,Logistics fit vs role location; never a proxy for anything else.
+consultant_profiles_train.csv,location_state,string,Two-letter US state code.,NC,"Logistics fit (onsite/hybrid feasibility, metro matching)."
+consultant_profiles_train.csv,work_authorization_status,string,US work-authorization category; notes if sponsorship is required.,US Citizen,Check against roles whose must_have_constraints forbid sponsorship.
+consultant_profiles_train.csv,willing_to_relocate,string,Yes/No - open to relocating for an engagement.,No,Logistics fit when role is onsite/hybrid in another metro.
+consultant_profiles_train.csv,remote_preference,string,Work-mode preference: Remote Only / Remote Preferred / Hybrid / Onsite OK / Flexible.,Hybrid,Match against remote_or_onsite; 'Remote Only' can violate onsite must-haves.
+consultant_profiles_train.csv,years_experience,integer,Total years of relevant professional experience.,9,Compare to required_years_experience; some roles enforce a hard minimum.
+consultant_profiles_train.csv,primary_role,string,Main role archetype (one of 10).,DevOps Engineer,Coarse filter for role matching.
+consultant_profiles_train.csv,secondary_role,string,Secondary role capability.,Cloud Engineer,Adjacent-fit and versatility signal.
+consultant_profiles_train.csv,technical_skills,string (pipe-separated),Core skills; multi-value with | separator.,CI/CD|Kubernetes|Infrastructure as Code,Match against required_skills / preferred_skills (case-insensitive; minor aliases exist).
+consultant_profiles_train.csv,business_domain_experience,string (pipe-separated),Industries worked in.,Banking|FinTech,Match against required_domain_experience; adjacent domains partially count.
+consultant_profiles_train.csv,certifications,string (pipe-separated),Professional certifications held. Blank = none.,Terraform Associate|CKA,Match against required/preferred certifications.
+consultant_profiles_train.csv,education_level,string,Highest education level. Blank = not provided.,Bachelor's,Context only; not a hard requirement for any role.
+consultant_profiles_train.csv,highest_degree_field,string,Field of study. Blank = not provided.,Computer Science,Context only.
+consultant_profiles_train.csv,programming_languages,string (pipe-separated),Languages. Blank = none listed.,Python|Bash,Counts toward skill matching.
+consultant_profiles_train.csv,cloud_platforms,string (pipe-separated),Cloud platforms used.,AWS|Azure,Counts toward skill/tool matching.
+consultant_profiles_train.csv,data_tools,string (pipe-separated),Data/analytics tools.,Snowflake|Airflow,Counts toward skill/tool matching.
+consultant_profiles_train.csv,devops_tools,string (pipe-separated),DevOps/platform tools.,Terraform|Docker|Jenkins,Counts toward skill/tool matching.
+consultant_profiles_train.csv,testing_tools,string (pipe-separated),Testing tools/frameworks.,Playwright|Postman,Counts toward skill/tool matching.
+consultant_profiles_train.csv,project_experience_summary,string,1-2 sentence summary of a recent representative engagement.,Designed CI/CD pipelines and Terraform modules for a Banking client...,Explainability evidence; light-weight text signal.
+consultant_profiles_train.csv,resume_text,string,Short unstructured resume blurb. Intentionally messy/incomplete for some consultants.,Senior DevOps Engineer with 9 years...,Text-mining signal; some consultants' real skills appear ONLY here.
+consultant_profiles_train.csv,behavioral_assessment_score,decimal (1-5),Composite behavioral score (mean of the five sub-scores). Blank = assessment not on file.,4.1,"Behavioral fit; treat blanks as low-confidence, not zero."
+consultant_profiles_train.csv,communication_score,decimal (1-5),Communication sub-score. Blank = not assessed.,4.3,Weight by role communication_importance.
+consultant_profiles_train.csv,problem_solving_score,decimal (1-5),Problem-solving sub-score. Blank = not assessed.,4.4,Weight by role problem_solving_importance.
+consultant_profiles_train.csv,teamwork_score,decimal (1-5),Teamwork sub-score. Blank = not assessed.,4.2,Weight by role teamwork_importance.
+consultant_profiles_train.csv,adaptability_score,decimal (1-5),Adaptability sub-score. Blank = not assessed.,4.1,Weight by role adaptability_importance.
+consultant_profiles_train.csv,leadership_score,decimal (1-5),Leadership sub-score. Blank = not assessed.,4.0,Weight by role leadership_importance.
+consultant_profiles_train.csv,availability_date,date (YYYY-MM-DD),Earliest date the consultant can start.,2026-08-31,Compare to role start_date; some roles have hard start-by constraints.
+consultant_profiles_train.csv,preferred_contract_type,string,W2 Hourly / W2 Salaried (FTE conversion open) / C2C / 1099 / W2 or C2C.,W2 Hourly,Commercial fit context; soft factor.
+consultant_profiles_train.csv,salary_expectation_range,string,Expected bill-rate range (USD/hour).,$95-118/hr,Commercial context; soft factor (not in core match score).
+consultant_profiles_train.csv,previous_client_rating,decimal (1-5),Average rating from prior client engagements. Blank = no prior rating on record.,4.6,"Track-record factor; treat blanks as neutral/unknown, not bad."
+consultant_profiles_train.csv,bench_status,string,Available - On Bench / Rolling Off Current Project / On Project / Notice Period.,Available - On Bench,Availability confidence; 'On Project' dates need confirmation.
+consultant_profiles_train.csv,notes,string,Recruiter/manager free-text notes.,Deep technical strength; coach on communication.,Qualitative context for explanations and risk flags.
+role_requirements_train.csv,role_id,string,Unique role identifier (R-###).,R-003,Primary key; join target for historical_matches_train.role_id.
+role_requirements_train.csv,client_industry,string,Client industry vertical.,Healthcare,Domain matching context.
+role_requirements_train.csv,client_region,string,US region of the client site.,Southeast,Context; logistics narrative.
+role_requirements_train.csv,role_title,string,Client-facing role title.,Data Engineer - Clinical Analytics,Display and matching context.
+role_requirements_train.csv,engagement_type,string,Staff Augmentation / Project-Based / Managed Team / Contract-to-Hire.,Staff Augmentation,Commercial context.
+role_requirements_train.csv,seniority_level,string,Junior / Mid / Senior.,Senior,Seniority fit vs years_experience.
+role_requirements_train.csv,required_skills,string (pipe-separated),Skills the client requires.,Python|SQL|Spark|Airflow|Snowflake|Data Modeling,Core matching input; should carry the most weight of any single factor.
+role_requirements_train.csv,preferred_skills,string (pipe-separated),Nice-to-have skills.,dbt|Kafka|Data Quality,Secondary matching input.
+role_requirements_train.csv,required_certifications,string (pipe-separated),Certifications required at submission. Blank = none required.,Terraform Associate,Hard-ish requirement; check certifications field.
+role_requirements_train.csv,preferred_certifications,string (pipe-separated),Certifications that strengthen a submission.,CKA|AWS DevOps Engineer Professional,Bonus signal.
+role_requirements_train.csv,required_years_experience,integer,Minimum years of experience sought.,6,Experience fit; may also appear in must_have_constraints as a hard floor.
+role_requirements_train.csv,required_domain_experience,string (pipe-separated),Industries the client wants prior experience in.,Healthcare,Domain matching; adjacent domains partially count unless listed as a must-have.
+role_requirements_train.csv,required_tools,string (pipe-separated),Tools required day one.,Databricks|Snowflake,Tool matching input.
+role_requirements_train.csv,nice_to_have_tools,string (pipe-separated),Optional tools.,dbt|AWS Glue,Bonus signal.
+role_requirements_train.csv,behavioral_priorities,string (pipe-separated),The two behavioral traits the client emphasized most.,Problem Solving|Adaptability,Explainability shorthand for the importance columns.
+role_requirements_train.csv,communication_importance,integer (1-5),Client-stated importance of communication.,5,Weight for communication_score.
+role_requirements_train.csv,problem_solving_importance,integer (1-5),Importance of problem solving.,5,Weight for problem_solving_score.
+role_requirements_train.csv,teamwork_importance,integer (1-5),Importance of teamwork.,4,Weight for teamwork_score.
+role_requirements_train.csv,adaptability_importance,integer (1-5),Importance of adaptability.,4,Weight for adaptability_score.
+role_requirements_train.csv,leadership_importance,integer (1-5),Importance of leadership.,3,Weight for leadership_score.
+role_requirements_train.csv,remote_or_onsite,string,Remote (US) / Hybrid (N days onsite) / Onsite.,Hybrid (3 days onsite),Logistics matching vs remote_preference and location.
+role_requirements_train.csv,location_city,string,Client site city.,Charlotte,Logistics matching.
+role_requirements_train.csv,location_state,string,Client site state code.,NC,"Logistics matching; hybrid metro states may span neighbors (e.g., NYC = NY/NJ/CT)."
+role_requirements_train.csv,relocation_allowed,string,Whether the client will consider relocating candidates.,Yes,Logistics matching for out-of-area candidates.
+role_requirements_train.csv,start_date,date (YYYY-MM-DD),Target engagement start.,2026-09-14,Compare to availability_date.
+role_requirements_train.csv,contract_duration_months,integer,Expected engagement length in months.,12,Commercial context.
+role_requirements_train.csv,role_description,string,Short narrative of the engagement.,Build HIPAA-compliant pipelines...,Context for explanations.
+role_requirements_train.csv,must_have_constraints,string,Hard constraints. Violating ANY of these should cap/exclude a candidate regardless of other strengths.,Prior healthcare data experience (HIPAA-regulated) is mandatory.,Constraint checking; drives Not Recommended outcomes.
+role_requirements_train.csv,deal_priority,string,Sales priority of the deal: Critical / High / Medium / Low.,High,Tie-breaking / urgency context.
+historical_matches_train.csv,historical_match_id,string,Unique record id (HM-###).,HM-042,Primary key.
+historical_matches_train.csv,role_id,string,Role the consultant was considered for.,R-005,Join to role_requirements_train.role_id.
+historical_matches_train.csv,consultant_id,string,Consultant considered.,C-037,Join to consultant_profiles_train.consultant_id.
+historical_matches_train.csv,match_score_assigned_by_human,decimal (1-10),"Sales manager's gut-feel match score at submission time. Noisy and occasionally biased - useful training signal, not ground truth.",7.8,Learn factor weights; also study where humans erred.
+historical_matches_train.csv,was_shortlisted,string,Yes/No - made the client shortlist.,Yes,Outcome label.
+historical_matches_train.csv,was_selected,string,Yes/No - selected for the engagement.,No,Outcome label (at most one Yes per role).
+historical_matches_train.csv,client_feedback_score,decimal (1-5),Client's post-placement feedback. Blank unless selected.,4.4,Outcome quality label.
+historical_matches_train.csv,placement_success,string,Yes / Partial / No. Blank unless selected.,Yes,Outcome quality label.
+historical_matches_train.csv,reason_selected_or_rejected,string,Recruiter-recorded reason. Includes some explicitly imperfect human decisions.,Selected - covers all 5 required skills...,Explainability examples + bias/imperfection signal.
+historical_matches_train.csv,skill_gap_notes,string,Gaps recorded against the role at submission time.,missing required: Kubernetes; no Energy/Manufacturing domain background,Gap-analysis training signal.
+historical_matches_train.csv,outcome_notes,string,Post-decision notes (mostly for selected candidates; retrospectives for notable misses).,Strong placement: client feedback 4.4/5...,Outcome narrative; includes retrospectives on missed candidates.
+data_dictionary.csv,file_name,string,Which CSV the row documents.,consultant_profiles_train.csv,Navigation.
+data_dictionary.csv,column_name,string,Column being documented.,technical_skills,Navigation.
+data_dictionary.csv,data_type,string,"Type and format, including separators and scales.",string (pipe-separated),Parsing guidance.
+data_dictionary.csv,description,string,"What the field means. Blank cells in data mean 'not available', never zero.",Core skills; multi-value with | separator.,Understanding the data.
+data_dictionary.csv,example_value,string,A representative value.,CI/CD|Kubernetes,Parsing guidance.
+data_dictionary.csv,intended_use,string,How the field is expected to be used by the assistant.,Match against required_skills.,Design guidance.

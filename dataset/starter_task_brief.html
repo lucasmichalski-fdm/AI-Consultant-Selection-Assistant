@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starter Task Brief &middot; AI Consultant Selection Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F6; --card:#FFFFFF; --ink:#1B2732; --body:#25333F; --muted:#5C6C79;
+  --line:#DCE2E7; --line-soft:#E9EDF0; --code-bg:#EEF1F3; --code-line:#E0E5E9;
+}
+body.doc-team{--accent:#0E5E6F; --accent-ink:#0B4954; --accent-soft:#E1EDF0;}
+body.doc-judges{--accent:#A32035; --accent-ink:#7E1626; --accent-soft:#F7E7EA;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:18px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0; background:var(--paper); color:var(--body);
+  font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
+  font-size:17px; line-height:1.68; -webkit-font-smoothing:antialiased;}
+.band{padding:9px 24px; text-align:center; color:#fff;
+  font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-size:11px; font-weight:600; letter-spacing:.16em; text-transform:uppercase;}
+body.doc-team .band{background:var(--accent)}
+body.doc-judges .band{background:repeating-linear-gradient(135deg,#8C1A2C 0 14px,#A32035 14px 28px)}
+.doc-head{background:var(--card); border-bottom:1px solid var(--line)}
+.head-inner{max-width:880px; margin:0 auto; padding:42px 24px 30px}
+.eyebrow{margin:0 0 12px; color:var(--accent);
+  font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase}
+h1{margin:0; color:var(--ink); font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  font-weight:800; font-size:clamp(30px,4.6vw,42px); line-height:1.12; letter-spacing:-0.018em}
+.lede{margin:14px 0 0; max-width:62ch; color:var(--muted); font-size:18.5px; line-height:1.55}
+.meta{list-style:none; display:flex; flex-wrap:wrap; gap:8px; margin:22px 0 0; padding:0}
+.meta li{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11.5px;
+  color:var(--muted); background:#FAFBFB; border:1px solid var(--line); border-radius:999px; padding:5px 12px}
+.meta li b{color:var(--ink); font-weight:600}
+.contents{max-width:880px; margin:26px auto 0; padding:0 24px}
+.contents-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 24px 20px}
+.contents-label{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+.toc-list{margin:0; padding:0; list-style:none; columns:2; column-gap:40px}
+.toc-list li{margin:4px 0; break-inside:avoid; font-size:15.5px}
+.contents a{color:var(--ink); text-decoration:underline; text-decoration-color:var(--line);
+  text-underline-offset:3px}
+.contents a:hover{color:var(--accent-ink); text-decoration-color:var(--accent)}
+.qgroup{margin:6px 0 2px; font-family:Archivo,Arial,sans-serif; font-weight:600; font-size:13px; color:var(--muted)}
+.qchips{display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px}
+.qchips a{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:12px; font-weight:500;
+  color:var(--accent-ink); background:var(--accent-soft); border:1px solid transparent;
+  border-radius:7px; padding:3px 10px; text-decoration:none}
+.qchips a:hover{border-color:var(--accent); background:var(--card)}
+main{max-width:880px; margin:0 auto; padding:10px 24px 64px}
+main > p:first-of-type{font-size:18.5px}
+h2{font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-weight:700; color:var(--ink);
+  font-size:24px; letter-spacing:-0.012em; line-height:1.25;
+  margin:46px 0 12px; padding-top:26px; border-top:1px solid var(--line)}
+h3{font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-weight:600; color:var(--ink);
+  font-size:18px; line-height:1.4; margin:30px 0 8px}
+body.doc-judges main h3{padding-left:12px; border-left:3px solid var(--accent)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 16px; padding-left:1.35em}
+li{margin:6px 0}
+li p{margin:0 0 6px}
+strong{color:var(--ink); font-weight:600}
+a{color:var(--accent-ink)}
+a:focus-visible,.qchips a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+code{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.83em;
+  background:var(--code-bg); border:1px solid var(--code-line); border-radius:6px; padding:1px 6px; color:var(--ink)}
+.id{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.85em; font-weight:500;
+  color:var(--ink); background:var(--code-bg); border-radius:5px; padding:0 5px; white-space:nowrap}
+blockquote{margin:20px 0; padding:16px 20px; background:var(--card);
+  border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px}
+blockquote p{margin:0 0 10px}
+blockquote p:last-child{margin:0}
+body.doc-examples blockquote::before{content:"Example output"; display:block;
+  font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--accent); margin:0 0 10px}
+.table-wrap{margin:20px 0; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-size:14.5px}
+th{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; text-align:left; color:#475864;
+  background:#F0F3F5; padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:10px 14px; border-bottom:1px solid var(--line-soft); vertical-align:top; line-height:1.5}
+tr:last-child td{border-bottom:0}
+td:first-child{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:13px; color:var(--ink)}
+.chip{display:inline-block; font-family:Archivo,Arial,sans-serif; font-size:12px; font-weight:600;
+  padding:2px 9px; border-radius:999px; white-space:nowrap}
+.t-strong{background:#E1F0E7; color:#175C3C}
+.t-good{background:#E1EDF0; color:#0B4954}
+.t-possible{background:#F6ECD6; color:#7A5410}
+.t-nr{background:#F7E7EA; color:#7E1626}
+.lbl{display:inline-block; font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  font-size:10.5px; font-weight:700; letter-spacing:.11em; text-transform:uppercase;
+  padding:2px 8px; border-radius:5px; margin-right:7px; position:relative; top:-1px}
+.lbl-look{background:var(--code-bg); color:#475864}
+.lbl-strong{background:#E1F0E7; color:#175C3C}
+.lbl-weak{background:#F7E7EA; color:#7E1626}
+.lbl-guide{background:var(--accent-soft); color:var(--accent-ink)}
+h2 .id,h3 .id{background:transparent; padding:0; font-size:.92em; font-weight:600; color:inherit}
+main > p:last-child em{color:var(--muted); font-size:15px}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0}
+footer{background:var(--card); border-top:1px solid var(--line); margin-top:48px}
+.foot-inner{max-width:880px; margin:0 auto; padding:20px 24px;
+  font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:12px; color:var(--muted);
+  display:flex; flex-wrap:wrap; gap:6px 22px}
+@media (max-width:640px){
+  .toc-list{columns:1}
+  .head-inner{padding:30px 20px 24px}
+  main{padding:6px 20px 48px}
+}
+@media print{
+  body{background:#fff; font-size:12.5px}
+  .band{print-color-adjust:exact; -webkit-print-color-adjust:exact}
+  .doc-head,.table-wrap,.contents-card,blockquote,footer{border-color:#BBB}
+  h2{break-after:avoid; margin-top:28px; padding-top:14px}
+  .table-wrap,blockquote{break-inside:avoid}
+  .qchips a{border:1px solid #CCC}
+}
+</style>
+</head>
+<body class="doc-team">
+<div class="band">TEAM DATASET &nbsp;&middot;&nbsp; SHARE WITH PARTICIPANTS</div>
+<header class="doc-head">
+  <div class="head-inner">
+    <p class="eyebrow">Hackathon Challenge &middot; Sales &middot; US Perspective</p>
+    <h1>Starter Task Brief</h1>
+    <p class="lede">The build challenge, the data, and what a winning AI consultant-selection assistant looks like.</p>
+    <ul class="meta"><li>Audience &middot; <b>Hackathon teams</b></li><li>Pairs with &middot; <b>4 CSV files in this package</b></li><li>Challenge day &middot; <b>2026-08-07</b></li></ul>
+  </div>
+</header>
+<nav class="contents" aria-label="Contents">
+  <div class="contents-card">
+    <p class="contents-label">Contents</p>
+    <ul class="toc-list"><li><a href="#1-business-context">1. Business context</a></li><li><a href="#2-dataset-overview">2. Dataset overview</a></li><li><a href="#3-suggested-mvp-features">3. Suggested MVP features</a></li><li><a href="#4-suggested-ranking-factors">4. Suggested ranking factors</a></li><li><a href="#5-explainability-expectations">5. Explainability expectations</a></li><li><a href="#6-bias-and-fairness-expectations">6. Bias and fairness expectations</a></li><li><a href="#7-example-queries-your-assistant-should-handle">7. Example queries your assistant should handle</a></li><li><a href="#8-suggested-demo-flow-aim-for-5-minutes">8. Suggested demo flow (aim for ~5 minutes)</a></li><li><a href="#9-data-quirks-to-know-before-you-build">9. Data quirks to know before you build</a></li></ul>
+  </div>
+</nav>
+<main>
+<p>Welcome! Your team is building an AI-powered assistant for the sales managers of <em>Company A</em>, a fictional US IT consulting and staffing firm. Everything in this dataset is fully synthetic - no real people, clients, or companies.</p>
+<h2 id="1-business-context">1. Business context</h2>
+<p>Company A's sales managers fill client roles from a bench of consultants. Today the process is manual: a manager reads a client role request, skims dozens of consultant profiles and resumes, applies gut feel, and submits a shortlist. It is slow, inconsistent, and occasionally unfair - strong candidates get missed because their profile was messy, and familiar faces get picked over better fits.</p>
+<p>Your mission: build an assistant that, given a <strong>role</strong> and the <strong>consultant pool</strong>, produces a <strong>ranked, explained, constraint-aware shortlist</strong> a sales manager can trust and send onward - in seconds, not hours.</p>
+<p>The solution does not need to be production-grade. A convincing MVP that ranks well, explains itself clearly, respects hard constraints, and avoids biased attributes will score well with the judges.</p>
+<h2 id="2-dataset-overview">2. Dataset overview</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Rows</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>consultant_profiles_train.csv</code></td>
+<td>240</td>
+<td>The consultant bench. IDs <code>C-001</code>-<code>C-240</code>, 10 role archetypes (Business Analyst, QA Analyst, DevOps Engineer, Full Stack Developer, Data Engineer, Cloud Engineer, AI Engineer, Scrum Master, Product Analyst, SDET), junior through senior.</td>
+</tr>
+<tr>
+<td><code>role_requirements_train.csv</code></td>
+<td>20</td>
+<td>Open client roles. IDs <code>R-001</code>-<code>R-020</code> across Banking, Insurance, Healthcare, Retail, Energy, Telecom, Public Sector, FinTech, Logistics, and Manufacturing. Each includes skills, certifications, behavioral importance weights, logistics, and <code>must_have_constraints</code>.</td>
+</tr>
+<tr>
+<td><code>historical_matches_train.csv</code></td>
+<td>200</td>
+<td>The <strong>last manual staffing cycle</strong> for these same 20 roles: 10 considered consultants per role, who was shortlisted, who was selected (exactly one per role), client feedback, and recruiter reasoning.</td>
+</tr>
+<tr>
+<td><code>data_dictionary.csv</code></td>
+<td>81</td>
+<td>Every column of every file above: type, meaning, example, and intended use. <strong>Read this first.</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Join keys:</strong> <code>consultant_id</code> (<code>C-###</code>) and <code>role_id</code> (<code>R-###</code>) link <code>historical_matches_train.csv</code> to the other two files. <code>historical_match_id</code> (<code>HM-###</code>) is just a row key.</p>
+<h3 id="about-the-historical-data-learn-from-it-including-the-mistakes">About the historical data - learn from it, including the mistakes</h3>
+<p>The historical file shows how the <em>manual</em> process handled these 20 roles. It contains real signal (skill alignment, domain fit, availability, ratings all correlate with <code>match_score_assigned_by_human</code> and outcomes) <strong>and deliberate human imperfection</strong>:</p>
+<ul>
+<li>Some selections were driven by familiarity, interview polish, or bill rate rather than fit - and the <code>client_feedback_score</code> / <code>placement_success</code> columns show those placements underperforming. The <code>reason_selected_or_rejected</code> text is candid about why.</li>
+<li>At least one strong candidate was passed over simply because their profile was under-documented at submission time; look for the retrospective in <code>outcome_notes</code>.</li>
+<li><code>match_score_assigned_by_human</code> is a noisy 1-10 gut-feel score - useful training signal, <strong>not</strong> ground truth.</li>
+</ul>
+<p>A great demo moment: show where your assistant would have disagreed with the humans, and why.</p>
+<h2 id="3-suggested-mvp-features">3. Suggested MVP features</h2>
+<ol>
+<li><strong>Role-to-candidate ranking</strong> - given a <code>role_id</code>, return a ranked top 5-10 with scores.</li>
+<li><strong>Explainable recommendations</strong> - for each candidate: why they rank where they do, citing specific skills, domains, certifications, behavioral fit, and logistics from the data.</li>
+<li><strong>Skill-gap analysis</strong> - what is missing vs required/preferred skills, certs, and tools; distinguish "hard blocker" from "coachable gap."</li>
+<li><strong>Constraint checking</strong> - parse <code>must_have_constraints</code> and cap or exclude violators (work authorization, hard experience minimums, certifications, onsite/hybrid feasibility, start-by dates, mandatory domain experience) <em>even when the candidate is otherwise excellent</em>, and say so explicitly.</li>
+<li><strong>Data-quality awareness</strong> - detect blank behavioral scores, missing ratings, and messy <code>resume_text</code>; lower confidence and flag rather than silently guessing. Bonus: mine <code>resume_text</code> for skills missing from structured fields.</li>
+<li><strong>Comparison view</strong> - side-by-side comparison of any two consultants for a role.</li>
+<li><strong>Client-ready shortlist summary</strong> - a short writeup a sales manager could forward.</li>
+</ol>
+<h2 id="4-suggested-ranking-factors">4. Suggested ranking factors</h2>
+<p>Judges score your rankings against a hidden weighted rubric. The exact weights are not disclosed, but the factor list and priority order below is a strong guide:</p>
+<ol>
+<li><strong>Required skills coverage</strong> - the dominant factor by a wide margin.</li>
+<li><strong>Required certifications and required tools</strong> - substantial weight.</li>
+<li><strong>Domain experience</strong> - substantial weight; closely related domains (e.g., Banking &lt;-&gt; FinTech, Healthcare &lt;-&gt; Insurance) deserve partial credit unless the role lists domain as a must-have.</li>
+<li><strong>Preferred skills</strong> - moderate weight.</li>
+<li><strong>Years of experience / seniority fit</strong> - moderate weight.</li>
+<li><strong>Behavioral fit</strong> - moderate weight, weighted by the role's five <code>*_importance</code> columns (a 2.3/5 communication score matters a lot when <code>communication_importance</code> is 4+).</li>
+<li><strong>Availability + location/remote/relocation fit</strong> - smaller weight, but still visible in rankings.</li>
+<li><strong>Prior client rating</strong> - smaller weight; treat blank as "unknown," not zero.</li>
+</ol>
+<p><strong>Must-have constraints override everything.</strong> A candidate violating any must-have should be capped near the bottom or excluded with the violated rule named - no matter how strong they look otherwise.</p>
+<h2 id="5-explainability-expectations">5. Explainability expectations</h2>
+<p>Every recommendation should answer: <em>why this person, why this rank, what's missing, what's risky, and what should the interviewer probe?</em> Good explanations cite the data ("covers all 5 required skills; holds Terraform Associate; 9 yrs vs 8 required; available 2026-08-31") rather than vibes ("great culture fit"). If your system uses an LLM, ground its claims in retrieved profile fields.</p>
+<h2 id="6-bias-and-fairness-expectations">6. Bias and fairness expectations</h2>
+<ul>
+<li>The data intentionally contains <strong>no protected demographic attributes</strong> (race, gender, age, religion, disability, marital status, national origin, ethnicity). Do not infer or fabricate them.</li>
+<li><strong>Names must not influence ranking.</strong> <code>first_name</code>/<code>last_name</code> are display-only. Judges will probe this.</li>
+<li>Location may be used <strong>only</strong> for logistics feasibility (onsite/hybrid/relocation/time zone) - never as a proxy for anything else.</li>
+<li>Work authorization may be used <strong>only</strong> to check explicit sponsorship constraints in <code>must_have_constraints</code>.</li>
+<li>Be able to state, on demand, which attributes your ranking uses and which it deliberately ignores.</li>
+</ul>
+<h2 id="7-example-queries-your-assistant-should-handle">7. Example queries your assistant should handle</h2>
+<ul>
+<li>"Find the top 5 consultants for Role <span class="id">R-003</span> and explain why."</li>
+<li>"Which consultants are nearly qualified but have skill gaps?"</li>
+<li>"Compare Consultant <span class="id">C-014</span> and <span class="id">C-052</span> for this role."</li>
+<li>"Show me the ranking factors for each shortlisted consultant."</li>
+<li>"Flag any missing or low-confidence profile data."</li>
+<li>"Explain how the recommendation avoids biased attributes."</li>
+</ul>
+<p>(For the comparison query, pick any role you like - part of the test is handling an under-specified ask gracefully.)</p>
+<h2 id="8-suggested-demo-flow-aim-for-5-minutes">8. Suggested demo flow (aim for ~5 minutes)</h2>
+<ol>
+<li><strong>30 sec</strong> - one-slide problem framing: manual matching is slow, inconsistent, sometimes unfair.</li>
+<li><strong>90 sec</strong> - live: pick a role (e.g., <code>R-003</code> or <code>R-005</code>), generate the ranked shortlist with explanations.</li>
+<li><strong>60 sec</strong> - constraint handling: show a strong-looking candidate being capped/excluded for a must-have violation, with the rule named.</li>
+<li><strong>60 sec</strong> - skill gaps + data quality: a near-miss candidate with a coachable gap, and a messy/incomplete profile handled with lowered confidence (bonus: skills recovered from <code>resume_text</code>).</li>
+<li><strong>45 sec</strong> - fairness: show the attributes used vs ignored; demonstrate names don't move rankings.</li>
+<li><strong>15 sec</strong> - the payoff: hours to seconds, consistent, auditable. Judges will then run their own hidden evaluation queries against your system.</li>
+</ol>
+<h2 id="9-data-quirks-to-know-before-you-build">9. Data quirks to know before you build</h2>
+<ul>
+<li><strong>Multi-value fields are pipe-separated</strong> (<code>Python|SQL|Azure</code>). Fields containing commas are quoted; no newlines inside cells.</li>
+<li><strong>Blank means "not available," never zero</strong> - blank behavioral scores, ratings, or education are incomplete data, not bad data.</li>
+<li><strong>Skill vocabulary has minor aliasing</strong> (e.g., "CI Integration" vs "CI/CD", "K8s" vs "Kubernetes", "Node" vs "Node.js") - normalize before matching. Matching is case-insensitive.</li>
+<li><strong>Some resumes are deliberately messy</strong> - lowercase fragments, "see attached," skills present in <code>resume_text</code> but absent from structured fields. This is by design.</li>
+<li><strong>Logistics are simplified to the state level</strong> - treat a candidate as commutable for onsite/hybrid work if their <code>location_state</code> matches the role's state (for the NYC metro, NY/NJ/CT all count). Real geography is fuzzier; the ground truth uses this simplification.</li>
+<li>Dates are <code>YYYY-MM-DD</code>. "Today" for the challenge is <strong>2026-08-07</strong>.</li>
+</ul>
+<p>Good luck - build something a skeptical sales manager would actually trust.</p>
+</main>
+<footer>
+  <div class="foot-inner"><span>All data is fully synthetic &mdash; no real people, clients, or companies.</span><span>Company A is fictional.</span><span>Generated 2026-08-07</span></div>
+</footer>
+</body>
+</html>
