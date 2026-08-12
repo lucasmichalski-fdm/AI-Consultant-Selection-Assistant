@@ -13,7 +13,7 @@ function normalizeRunResponse(run: Partial<RankingRunResponse>, request: RunRank
     retrieved_k: run.retrieved_k ?? request.retrieveK,
     total_candidates: run.total_candidates ?? 0,
     ranked_candidates: run.ranked_candidates ?? [],
-    componentized_mode: run.componentized_mode ?? false,
+    componentized_mode: run.componentized_mode ?? request.componentized,
     rank_comparisons: run.rank_comparisons ?? [],
     upskill_advice: run.upskill_advice ?? [],
     generated_at: run.generated_at ?? new Date().toISOString(),
@@ -35,6 +35,7 @@ export async function runRanking(request: RunRankingRequest): Promise<RankingRun
       role_id: request.roleId,
       top_n: request.topN,
       retrieved_k: request.retrieveK,
+      componentized_mode: request.componentized,
       generated_at: new Date().toISOString(),
       applied_policy: request.policy ?? defaultPolicy,
     }, request);
@@ -44,6 +45,7 @@ export async function runRanking(request: RunRankingRequest): Promise<RankingRun
     role_id: request.roleId,
     top_n: request.topN,
     retrieve_k: request.retrieveK,
+    componentized: request.componentized,
     policy: request.policy,
   };
 

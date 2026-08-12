@@ -15,6 +15,7 @@ export interface RunRankingRequest {
   roleId: string;
   topN: number;
   retrieveK: number;
+  componentized: boolean;
   policy: PolicyToggles;
 }
 
@@ -39,8 +40,29 @@ export interface RankComparison {
   [key: string]: unknown;
 }
 
+export interface RequirementGap {
+  requirement: string;
+  requirement_type: string;
+  mandatory?: boolean;
+  mandatory_scope?: string;
+  gates_eligibility?: boolean;
+  gap_status?: string;
+  source_dimensions?: string[];
+}
+
+export interface UpskillTarget {
+  requirement: string;
+  requirement_type: string;
+  gap_status?: string;
+  estimated_weeks_low?: number;
+  estimated_weeks_high?: number;
+}
+
 export interface UpskillAdvice {
-  [key: string]: unknown;
+  consultant_id?: string;
+  role_id?: string;
+  requirement_gaps?: RequirementGap[];
+  upskill_targets?: UpskillTarget[];
 }
 
 export interface RankingRunResponse {

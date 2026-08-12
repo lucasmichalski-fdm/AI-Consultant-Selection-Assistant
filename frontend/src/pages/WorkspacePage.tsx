@@ -19,6 +19,7 @@ export function WorkspacePage() {
   const [roleId, setRoleId] = useState("R-003");
   const [topN, setTopN] = useState(5);
   const [retrieveK, setRetrieveK] = useState(25);
+  const [componentized, setComponentized] = useState(true);
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
   const run = runMutation.data;
@@ -33,6 +34,7 @@ export function WorkspacePage() {
       roleId,
       topN,
       retrieveK,
+      componentized,
       policy,
     });
   };
@@ -57,9 +59,11 @@ export function WorkspacePage() {
           roleId={roleId}
           topN={topN}
           retrieveK={retrieveK}
+          componentized={componentized}
           onRoleIdChange={setRoleId}
           onTopNChange={setTopN}
           onRetrieveKChange={setRetrieveK}
+          onComponentizedChange={setComponentized}
           onRun={onRun}
           isRunning={runMutation.isPending}
         />

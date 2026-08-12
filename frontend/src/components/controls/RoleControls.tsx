@@ -5,9 +5,11 @@ interface RoleControlsProps {
   roleId: string;
   topN: number;
   retrieveK: number;
+  componentized: boolean;
   onRoleIdChange: (value: string) => void;
   onTopNChange: (value: number) => void;
   onRetrieveKChange: (value: number) => void;
+  onComponentizedChange: (value: boolean) => void;
   onRun: () => void;
   isRunning: boolean;
 }
@@ -17,9 +19,11 @@ export function RoleControls({
   roleId,
   topN,
   retrieveK,
+  componentized,
   onRoleIdChange,
   onTopNChange,
   onRetrieveKChange,
+  onComponentizedChange,
   onRun,
   isRunning,
 }: RoleControlsProps) {
@@ -62,6 +66,15 @@ export function RoleControls({
             value={retrieveK}
             onChange={(event) => onRetrieveKChange(Number(event.target.value))}
           />
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={componentized}
+            onChange={(event) => onComponentizedChange(event.target.checked)}
+          />
+          Enable componentized mode
         </label>
       </div>
 

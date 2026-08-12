@@ -32,6 +32,7 @@ class RankRequest(BaseModel):
     role_id: str = Field(min_length=1)
     top_n: int = Field(default=5, ge=1, le=20)
     retrieve_k: int = Field(default=25, ge=5, le=200)
+    componentized: bool = False
     policy: PolicyToggles = Field(default_factory=PolicyToggles)
     save_output: bool = False
 
@@ -104,6 +105,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 role_id=request.role_id,
                 top_n=request.top_n,
                 retrieve_k=request.retrieve_k,
+                use_component_pipeline=request.componentized,
                 policy=ranking_policy,
             )
         except ValueError as exc:
