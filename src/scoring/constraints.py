@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from src.models import ConsultantProfile, RoleRequirement
+from src.scoring.location import is_onsite_or_hybrid_role, location_compatible
 
 
 def _parse_date(value: str) -> datetime | None:
@@ -21,11 +22,6 @@ def _requires_no_sponsorship(role: RoleRequirement) -> bool:
     return "without sponsorship" in text or "no sponsorship" in text
 
 
-def _is_onsite_or_hybrid(role: RoleRequirement) -> bool:
-    mode = role.remote_or_onsite.lower()
-    return "onsite" in mode or "hybrid" in mode
-
-
 def evaluate_constraints(role: RoleRequirement, consultant: ConsultantProfile) -> tuple[bool, list[str]]:
     """Return (passes, violations) for hard constraints."""
 
@@ -39,10 +35,8 @@ def evaluate_constraints(role: RoleRequirement, consultant: ConsultantProfile) -
         if "sponsorship required" in auth and "no sponsorship required" not in auth:
             violations.append("CONSTRAINT_FAIL_AUTHORIZATION")
 
-    if _is_onsite_or_hybrid(role):
-        state_match = consultant.location_state == role.location_state
-        relocation_path = role.relocation_allowed and consultant.willing_to_relocate
-        if not state_match and not relocation_path:
+    if is_onsite_or_hybrid_role(role):
+        if not location_compatible(role, consultant):
             violations.append("CONSTRAINT_FAIL_LOCATION")
 
     role_start = _parse_date(role.start_date)

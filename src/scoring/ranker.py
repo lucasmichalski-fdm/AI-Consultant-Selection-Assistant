@@ -7,6 +7,7 @@ from datetime import datetime
 from src.config import ScoreWeights
 from src.models import ConsultantProfile, RankedCandidate, RoleRequirement, ScoreCard
 from src.scoring.constraints import evaluate_constraints
+from src.scoring.location import location_alignment_score
 from src.scoring.reason_codes import build_reason_codes
 
 
@@ -79,23 +80,16 @@ def _domain_score(role: RoleRequirement, consultant: ConsultantProfile) -> float
 
 
 def _availability_location_score(role: RoleRequirement, consultant: ConsultantProfile) -> float:
-    score = 0.0
-
+    availability = 0.5
     role_start = _parse_date(role.start_date)
     consultant_date = _parse_date(consultant.availability_date)
     if role_start and consultant_date:
-        score += 0.5 if consultant_date <= role_start else 0.0
-    else:
-        score += 0.25
+        availability = 1.0 if consultant_date <= role_start else 0.0
 
-    role_mode = role.remote_or_onsite.lower()
-    if "remote" in role_mode:
-        score += 0.5
-    else:
-        state_match = consultant.location_state == role.location_state
-        relocation_path = role.relocation_allowed and consultant.willing_to_relocate
-        score += 0.5 if (state_match or relocation_path) else 0.0
+    location = location_alignment_score(role, consultant)
 
+    # Location is intentionally weighted above availability per FDM onsite policy.
+    score = (0.3 * availability) + (0.7 * location)
     return max(0.0, min(1.0, score))
 
 

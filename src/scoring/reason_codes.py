@@ -43,6 +43,15 @@ def build_reason_codes(
     elif consultant.years_experience >= role.required_years_experience:
         reasons.append("EXP_MEETS_TARGET")
 
+    has_location_violation = bool(violations and "CONSTRAINT_FAIL_LOCATION" in violations)
+    if not has_location_violation and score_card.availability_location >= 0.8:
+        reasons.append("LOCATION_LOGISTICS_STRONG")
+    elif score_card.availability_location < 0.4:
+        reasons.append("LOCATION_LOGISTICS_WEAK")
+
+    if not has_location_violation and consultant.location_state != role.location_state and consultant.willing_to_relocate:
+        reasons.append("LOCATION_RELOCATION_PATH")
+
     if required_skill_matches and not missing_required_skills:
         reasons.append("MUST_HAVE_COVERAGE_COMPLETE")
 

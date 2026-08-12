@@ -53,3 +53,29 @@ def test_constraints_fail_on_multiple_rules() -> None:
     assert "CONSTRAINT_FAIL_START_DATE" in violations
     assert "CONSTRAINT_FAIL_LOCATION" in violations
     assert "CONSTRAINT_FAIL_AUTHORIZATION" in violations
+
+
+def test_constraints_fail_when_remote_only_candidate_for_onsite_role() -> None:
+    role = RoleRequirement(
+        role_id="R-003",
+        raw={},
+        required_years_experience=3,
+        start_date="2026-09-01",
+        remote_or_onsite="Hybrid (2 days onsite)",
+        location_state="NY",
+        relocation_allowed=False,
+        must_have_constraints="None",
+    )
+    consultant = ConsultantProfile(
+        consultant_id="C-003",
+        raw={},
+        years_experience=6,
+        availability_date="2026-08-20",
+        location_state="NY",
+        willing_to_relocate=False,
+        remote_preference="Remote Only",
+        work_authorization_status="US Citizen",
+    )
+    passes, violations = evaluate_constraints(role, consultant)
+    assert passes is False
+    assert "CONSTRAINT_FAIL_LOCATION" in violations
