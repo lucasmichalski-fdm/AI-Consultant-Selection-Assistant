@@ -269,8 +269,8 @@ button:focus {
 }
 
 .candidate-card.selected {
-  border-color: #2c8791;
-  box-shadow: 0 0 0 2px rgb(44 135 145 / 15%);
+  border-color: #84cc16;
+  box-shadow: 0 0 0 1px rgb(132 204 22 / 45%);
 }
 
 .candidate-head {
@@ -366,6 +366,17 @@ button:focus {
   font-size: 0.84rem;
 }
 
+.compare-upskill {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #d9e4de;
+}
+
+.compare-upskill h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.85rem;
+}
+
 .advisory-panel .insights-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -424,6 +435,57 @@ button:focus {
 .insight-empty {
   color: var(--muted);
   font-size: 0.86rem;
+}
+
+.upskill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.upskill-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: #f1f7f4;
+  border: 1px solid #d0e1d8;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+}
+
+.upskill-name {
+  font-weight: 600;
+  color: #1d3540;
+}
+
+.priority-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.priority-high {
+  color: #8b1d1d;
+  background: #fde8e8;
+  border-color: #f3b7b7;
+}
+
+.priority-medium {
+  color: #7c4a00;
+  background: #fff4df;
+  border-color: #f4d6a2;
+}
+
+.priority-low {
+  color: #245f34;
+  background: #e8f7ec;
+  border-color: #bfe5c8;
 }
 
 .status-line {

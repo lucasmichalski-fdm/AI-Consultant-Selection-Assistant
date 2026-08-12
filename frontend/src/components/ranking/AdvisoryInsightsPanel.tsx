@@ -1,26 +1,9 @@
-import type { RankComparison, UpskillAdvice } from "@/types/ranking";
+import type { RankedCandidate, UpskillAdvice } from "@/types/ranking";
 
 interface AdvisoryInsightsPanelProps {
   componentizedMode: boolean;
-  rankComparisons: RankComparison[];
   upskillAdvice: UpskillAdvice[];
-}
-
-function toLabel(text: string | undefined, fallback: string): string {
-  if (!text || text.trim().length === 0) {
-    return fallback;
-  }
-  return text.replace(/_/g, " ");
-}
-
-function toWeeksLabel(low?: number, high?: number): string {
-  if (typeof low === "number" && typeof high === "number") {
-    return low === high ? `${low} week${low === 1 ? "" : "s"}` : `${low}-${high} weeks`;
-  }
-  if (typeof low === "number") {
-    return `${low}+ weeks`;
-  }
-  return "time estimate unavailable";
+  selectedCandidates: RankedCandidate[];
 }
 
 function formatUpskillSummary(advice: UpskillAdvice): string {
@@ -29,23 +12,63 @@ function formatUpskillSummary(advice: UpskillAdvice): string {
   return `${consultant}${role}`;
 }
 
-function formatRankComparison(value: RankComparison): string {
-  const winner = typeof value["winner_consultant_id"] === "string" ? value["winner_consultant_id"] : "unknown";
-  const loser = typeof value["loser_consultant_id"] === "string" ? value["loser_consultant_id"] : "unknown";
-  const decision = typeof value["decision_basis"] === "string" ? value["decision_basis"] : "comparison produced";
-  return `${winner} outranks ${loser} (${decision.replace(/_/g, " ")})`;
+type PriorityLevel = "high" | "medium" | "low";
+
+function normalizeTerm(term: string | undefined): string {
+  return (term ?? "").trim().toLowerCase();
+}
+
+function getTargetPriority(advice: UpskillAdvice, requirement: string): PriorityLevel {
+  const normalized = normalizeTerm(requirement);
+  const matchingGap = advice.requirement_gaps?.find((gap) => normalizeTerm(gap.requirement) === normalized);
+
+  if (!matchingGap) {
+    return "medium";
+  }
+
+  if (matchingGap.mandatory === false) {
+    return "low";
+  }
+
+  if (matchingGap.gap_status === "missing") {
+    return "high";
+  }
+
+  if (matchingGap.gap_status === "development_opportunity") {
+    return "medium";
+  }
+
+  if (matchingGap.gap_status === "unverified") {
+    return "low";
+  }
+
+  return "medium";
+}
+
+function getPriorityLabel(priority: PriorityLevel): string {
+  if (priority === "high") return "High priority";
+  if (priority === "low") return "Lower priority";
+  return "Medium priority";
 }
 
 export function AdvisoryInsightsPanel({
   componentizedMode,
-  rankComparisons,
   upskillAdvice,
+  selectedCandidates,
 }: AdvisoryInsightsPanelProps) {
+  const highestRankedSelected = selectedCandidates
+    .slice()
+    .sort((a, b) => a.rank - b.rank)[0];
+
+  const selectedAdvice = highestRankedSelected
+    ? upskillAdvice.find((advice) => advice.consultant_id === highestRankedSelected.consultant_id)
+    : undefined;
+
   if (!componentizedMode) {
     return (
       <section className="panel advisory-panel">
         <div className="panel-head">
-          <h2>Advisory Insights</h2>
+          <h2>Upskilling Advice</h2>
           <p>Enable componentized mode on the backend to emit comparisons and upskill recommendations.</p>
         </div>
       </section>
@@ -55,52 +78,38 @@ export function AdvisoryInsightsPanel({
   return (
     <section className="panel advisory-panel">
       <div className="panel-head">
-        <h2>Advisory Insights</h2>
-        <p>Componentized analysis generated rank narratives and development paths.</p>
+        <h2>Upskilling Advice</h2>
+        <p>Displays advice for the highest-ranked consultant currently selected for comparison.</p>
       </div>
 
-      <div className="insights-summary">
-        <div>
-          <span>Rank Comparisons</span>
-          <strong>{rankComparisons.length}</strong>
-        </div>
-        <div>
-          <span>Upskill Recommendations</span>
-          <strong>{upskillAdvice.length}</strong>
-        </div>
-      </div>
-
-      <div className="insights-grid">
-        <div className="insights-column">
-          <h3>Top Rank Comparison</h3>
-          {rankComparisons.length === 0 ? (
-            <p className="insight-empty">No rank comparison output in this run.</p>
-          ) : (
-            <p>{formatRankComparison(rankComparisons[0])}</p>
-          )}
-        </div>
-
-        <div className="insights-column">
-          <h3>Top Upskill Recommendation</h3>
-          {upskillAdvice.length === 0 ? (
-            <p className="insight-empty">No upskill recommendations in this run.</p>
-          ) : (
-            <div>
-              <p>{formatUpskillSummary(upskillAdvice[0])}</p>
-              {upskillAdvice[0].upskill_targets && upskillAdvice[0].upskill_targets.length > 0 ? (
-                <ul>
-                  {upskillAdvice[0].upskill_targets.map((target, index) => (
-                    <li key={`${target.requirement}-${index}`}>
-                      {target.requirement}: {toLabel(target.requirement_type, "required requirement")}, {toLabel(target.gap_status, "missing")} ({toWeeksLabel(target.estimated_weeks_low, target.estimated_weeks_high)})
+      <div className="insights-column">
+        <h3>Selected Candidate Recommendation</h3>
+        {selectedCandidates.length === 0 ? (
+          <p className="insight-empty">Select candidates in the shortlist to view targeted upskilling advice.</p>
+        ) : !highestRankedSelected ? (
+          <p className="insight-empty">No selected candidate available for upskilling advice.</p>
+        ) : !selectedAdvice ? (
+          <p className="insight-empty">No upskill recommendation found for consultant {highestRankedSelected.consultant_id}.</p>
+        ) : (
+          <div>
+            <p>{formatUpskillSummary(selectedAdvice)}</p>
+            {selectedAdvice.upskill_targets && selectedAdvice.upskill_targets.length > 0 ? (
+              <ul className="upskill-list">
+                {selectedAdvice.upskill_targets.map((target, index) => {
+                  const priority = getTargetPriority(selectedAdvice, target.requirement);
+                  return (
+                    <li key={`${target.requirement}-${index}`} className="upskill-list-item">
+                      <span className="upskill-name">{target.requirement}</span>
+                      <span className={`priority-tag priority-${priority}`}>{getPriorityLabel(priority)}</span>
                     </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="insight-empty">No actionable skill/tool targets for this candidate.</p>
-              )}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="insight-empty">No actionable skill/tool targets for this candidate.</p>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

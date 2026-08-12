@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { RoleControls } from "@/components/controls/RoleControls";
 import { PolicyPanel } from "@/components/controls/PolicyPanel";
-import { AdvisoryInsightsPanel } from "@/components/ranking/AdvisoryInsightsPanel";
 import { CandidateCard } from "@/components/ranking/CandidateCard";
 import { ComparePanel } from "@/components/ranking/ComparePanel";
 import { RunSummary } from "@/components/ranking/RunSummary";
@@ -94,10 +93,9 @@ export function WorkspacePage() {
           </div>
         </section>
 
-        <ComparePanel selected={selectedCandidates} />
-        <AdvisoryInsightsPanel
+        <ComparePanel
+          selected={selectedCandidates}
           componentizedMode={Boolean(run?.componentized_mode)}
-          rankComparisons={run?.rank_comparisons ?? []}
           upskillAdvice={run?.upskill_advice ?? []}
         />
       </section>
