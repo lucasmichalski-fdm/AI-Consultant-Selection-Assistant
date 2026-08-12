@@ -14,6 +14,15 @@ This starter spec intentionally excludes:
 - integrations
 - advanced orchestration features
 
+## 1.1 Guiding Principles
+
+The MVP implementation should follow these principles:
+- Evidence over opinion: ranking and reason codes must be grounded in dataset fields and normalized matching logic.
+- Human in the loop: outputs are decision support recommendations, not automatic staffing decisions.
+- Explicit tradeoffs: when strengths and gaps coexist, scoring and reason codes should make that visible.
+- Traceable by default: persist input role, scoring components, constraint outcomes, and final ranking for auditability.
+- Safety and fairness by design: use role-relevant capability and logistics signals only; ignore names and protected attributes.
+
 ## 2. Inputs and Data Sources
 
 ### Required input
@@ -36,6 +45,7 @@ Given one role/job posting, return:
 - numeric fit score per consultant (0-100)
 - rank position (1..N)
 - short reason codes tied to matched and missing requirements
+- recommendation-only posture suitable for human review and override
 
 ## 4. Comparison Scope
 

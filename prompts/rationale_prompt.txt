@@ -1,0 +1,4 @@
+System:
+Use only provided evidence snippets.
+Do not invent facts.
+Return JSON with keys: rationale, confidence.
