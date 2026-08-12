@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from src.config import ScoreWeights
 from src.models import ConsultantProfile, RoleRequirement
+from src.scoring.policy import RankingPolicy
 from src.scoring.constraints import evaluate_constraints
 from src.scoring.evidence import find_potential_unconfirmed_terms, match_terms_from_structured_and_text
 from src.scoring.ranker import rank_candidates
@@ -109,6 +110,7 @@ class CandidateFitEvaluator:
         role: RoleRequirement,
         consultant: ConsultantProfile,
         retrieval_context: RetrievalContext | None = None,
+        policy: RankingPolicy | None = None,
     ) -> EvaluationPacket:
         raise NotImplementedError
 
@@ -124,6 +126,7 @@ class DeterministicCandidateFitEvaluator(CandidateFitEvaluator):
         role: RoleRequirement,
         consultant: ConsultantProfile,
         retrieval_context: RetrievalContext | None = None,
+        policy: RankingPolicy | None = None,
     ) -> EvaluationPacket:
         retrieval = retrieval_context or RetrievalContext()
 
@@ -159,8 +162,8 @@ class DeterministicCandidateFitEvaluator(CandidateFitEvaluator):
             find_potential_unconfirmed_terms(role.required_certs, consultant.normalized_certs, consultant).keys()
         )
 
-        passes, violations = evaluate_constraints(role, consultant)
-        ranked_single = rank_candidates(role, [consultant], self._weights)[0]
+        passes, violations = evaluate_constraints(role, consultant, policy=policy)
+        ranked_single = rank_candidates(role, [consultant], self._weights, policy=policy)[0]
 
         return EvaluationPacket(
             role_id=role.role_id,

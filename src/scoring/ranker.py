@@ -9,6 +9,7 @@ from src.models import ConsultantProfile, RankedCandidate, RoleRequirement, Scor
 from src.scoring.constraints import evaluate_constraints
 from src.scoring.evidence import match_terms_from_structured_and_text
 from src.scoring.location import location_alignment_score
+from src.scoring.policy import RankingPolicy
 from src.scoring.reason_codes import build_reason_codes
 
 
@@ -87,14 +88,25 @@ def _domain_score(role: RoleRequirement, consultant: ConsultantProfile) -> float
     return 0.0
 
 
-def _availability_location_score(role: RoleRequirement, consultant: ConsultantProfile) -> float:
+def _availability_location_score(role: RoleRequirement, consultant: ConsultantProfile, policy: RankingPolicy) -> float:
     availability = 0.5
-    role_start = _parse_date(role.start_date)
-    consultant_date = _parse_date(consultant.availability_date)
-    if role_start and consultant_date:
-        availability = 1.0 if consultant_date <= role_start else 0.0
+    if policy.start_date_mode != "ignore":
+        role_start = _parse_date(role.start_date)
+        consultant_date = _parse_date(consultant.availability_date)
+        if role_start and consultant_date:
+            availability = 1.0 if consultant_date <= role_start else 0.0
+    else:
+        availability = 1.0
 
-    location = location_alignment_score(role, consultant)
+    if policy.location_mode == "ignore":
+        location = 1.0
+    else:
+        location = location_alignment_score(
+            role,
+            consultant,
+            enforce_office_schedule=policy.enforce_office_schedule,
+            allow_relocation_path=policy.allow_relocation_path,
+        )
 
     # Location is intentionally weighted above availability per FDM onsite policy.
     score = (0.3 * availability) + (0.7 * location)
@@ -107,18 +119,24 @@ def _prior_rating_score(consultant: ConsultantProfile) -> float:
     return max(0.0, min(1.0, consultant.previous_client_rating / 5.0))
 
 
-def _score_components(role: RoleRequirement, consultant: ConsultantProfile) -> ScoreCard:
-    required_bundle = role.required_certs + role.required_tools
-    observed_bundle = consultant.normalized_certs + consultant.normalized_tools
+def _score_components(role: RoleRequirement, consultant: ConsultantProfile, policy: RankingPolicy) -> ScoreCard:
+    required_bundle = role.required_tools
+    observed_bundle = consultant.normalized_tools
+    if policy.certification_mode != "ignore":
+        required_bundle = role.required_certs + role.required_tools
+        observed_bundle = consultant.normalized_certs + consultant.normalized_tools
+
+    domain_score = _domain_score(role, consultant) if policy.domain_mode != "ignore" else 1.0
+    experience_score = _experience_score(role, consultant) if policy.experience_mode != "ignore" else 1.0
 
     return ScoreCard(
         required_skills=_evidence_ratio(role.required_skills, consultant.normalized_skills, consultant),
         required_certs_tools=_evidence_ratio(required_bundle, observed_bundle, consultant),
-        domain=_domain_score(role, consultant),
+        domain=domain_score,
         preferred_skills=_evidence_ratio(role.preferred_skills, consultant.normalized_skills, consultant),
-        experience=_experience_score(role, consultant),
+        experience=experience_score,
         behavioral=_behavioral_score(role, consultant),
-        availability_location=_availability_location_score(role, consultant),
+        availability_location=_availability_location_score(role, consultant, policy),
         prior_rating=_prior_rating_score(consultant),
     )
 
@@ -136,17 +154,24 @@ def _weighted_score(card: ScoreCard, weights: ScoreWeights) -> float:
     )
 
 
-def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile], weights: ScoreWeights) -> list[RankedCandidate]:
+def rank_candidates(
+    role: RoleRequirement,
+    consultants: list[ConsultantProfile],
+    weights: ScoreWeights,
+    policy: RankingPolicy | None = None,
+) -> list[RankedCandidate]:
     """Rank candidates using a two-pass flow: fit first, eligibility second."""
+
+    active_policy = policy or RankingPolicy()
 
     # Pass 1: compute fit score independently of mandatory eligibility.
     scored: list[tuple[RankedCandidate, ScoreCard, int, str, bool]] = []
     for consultant in consultants:
-        passes, violations = evaluate_constraints(role, consultant)
-        card = _score_components(role, consultant)
+        passes, violations = evaluate_constraints(role, consultant, policy=active_policy)
+        card = _score_components(role, consultant, active_policy)
         raw_score = _weighted_score(card, weights)
 
-        reasons = build_reason_codes(role, consultant, card, violations)
+        reasons = build_reason_codes(role, consultant, card, violations, policy=active_policy)
 
         ranked = RankedCandidate(
             rank=0,

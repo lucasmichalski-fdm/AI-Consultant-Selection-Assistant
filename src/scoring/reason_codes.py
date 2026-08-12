@@ -5,6 +5,7 @@ from __future__ import annotations
 from src.models import ConsultantProfile, RoleRequirement, ScoreCard
 from src.scoring.constraints import evaluate_mandatory_context_evidence
 from src.scoring.evidence import find_potential_unconfirmed_terms, match_terms_from_structured_and_text
+from src.scoring.policy import RankingPolicy
 
 
 def _sanitize_reason_token(value: str) -> str:
@@ -16,9 +17,11 @@ def build_reason_codes(
     consultant: ConsultantProfile,
     score_card: ScoreCard,
     violations: list[str] | None = None,
+    policy: RankingPolicy | None = None,
 ) -> list[str]:
     """Generate compact reason codes for ranking output."""
 
+    active_policy = policy or RankingPolicy()
     reasons: list[str] = []
 
     required_skill_matches = match_terms_from_structured_and_text(
@@ -70,7 +73,7 @@ def build_reason_codes(
         consultant,
     )
     missing_certs = sorted(set(role.required_certs).difference(matched_required_certs))
-    if missing_certs:
+    if active_policy.certification_mode != "ignore" and missing_certs:
         reasons.append("GAP_REQUIRED_CERT")
 
     potential_cert_terms = find_potential_unconfirmed_terms(
@@ -78,35 +81,44 @@ def build_reason_codes(
         consultant.normalized_certs,
         consultant,
     )
-    for cert in missing_certs[:2]:
-        if cert in potential_cert_terms:
-            reasons.append(f"REVIEW_POTENTIAL_CERT_{_sanitize_reason_token(cert)}")
+    if active_policy.certification_mode != "ignore":
+        for cert in missing_certs[:2]:
+            if cert in potential_cert_terms:
+                reasons.append(f"REVIEW_POTENTIAL_CERT_{_sanitize_reason_token(cert)}")
 
-    if score_card.domain >= 0.8:
-        reasons.append("DOMAIN_STRONG_FIT")
-    elif score_card.domain > 0:
-        reasons.append("DOMAIN_PARTIAL_FIT")
+    if active_policy.domain_mode != "ignore":
+        if score_card.domain >= 0.8:
+            reasons.append("DOMAIN_STRONG_FIT")
+        elif score_card.domain > 0:
+            reasons.append("DOMAIN_PARTIAL_FIT")
 
-    if role.required_years_experience > 0 and consultant.years_experience + 1 < role.required_years_experience:
-        reasons.append("EXP_BELOW_TARGET")
-    elif consultant.years_experience >= role.required_years_experience:
-        reasons.append("EXP_MEETS_TARGET")
+    if active_policy.experience_mode != "ignore":
+        if role.required_years_experience > 0 and consultant.years_experience + 1 < role.required_years_experience:
+            reasons.append("EXP_BELOW_TARGET")
+        elif consultant.years_experience >= role.required_years_experience:
+            reasons.append("EXP_MEETS_TARGET")
 
     has_location_violation = bool(violations and "CONSTRAINT_FAIL_LOCATION" in violations)
-    if not has_location_violation:
+    if active_policy.location_mode != "ignore" and not has_location_violation:
         if score_card.availability_location >= 0.8:
             reasons.append("LOCATION_LOGISTICS_STRONG")
         elif score_card.availability_location < 0.4:
             reasons.append("LOCATION_LOGISTICS_WEAK")
 
-    if not has_location_violation and consultant.location_state != role.location_state and consultant.willing_to_relocate:
+    if (
+        active_policy.location_mode != "ignore"
+        and active_policy.allow_relocation_path
+        and not has_location_violation
+        and consultant.location_state != role.location_state
+        and consultant.willing_to_relocate
+    ):
         reasons.append("LOCATION_RELOCATION_PATH")
 
     if required_skill_matches and not missing_required_skills:
         reasons.append("REQUIRED_SKILLS_COVERAGE_COMPLETE")
 
     mandatory_status, _mandatory_matches, required_targets = evaluate_mandatory_context_evidence(role, consultant)
-    if required_targets:
+    if required_targets and active_policy.domain_mode != "ignore":
         if mandatory_status == "explicit":
             reasons.append("MANDATORY_CONTEXT_EXPLICIT_MATCH")
         elif mandatory_status == "proxy":

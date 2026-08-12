@@ -201,6 +201,18 @@ cython_debug/
 
 # Project runtime artifacts
 outputs/*.json
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Accidental root Node lockfile (root is not a Node package)
+/package-lock.json
 #   you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 # Temporary file for partial code execution

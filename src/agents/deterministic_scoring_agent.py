@@ -7,6 +7,7 @@ from dataclasses import field
 
 from src.config import ScoreWeights
 from src.models import RankedCandidate, RoleRequirement
+from src.scoring.policy import RankingPolicy
 from src.scoring.ranker import rank_candidates
 
 from src.agents.candidate_fit_evaluator import (
@@ -74,6 +75,7 @@ class DeterministicScoringAgent:
         role: RoleRequirement,
         packets: list[EvaluationPacket],
         top_n: int | None = None,
+        policy: RankingPolicy | None = None,
     ) -> list[DeterministicEvaluation]:
         raise NotImplementedError
 
@@ -246,9 +248,10 @@ class DefaultDeterministicScoringAgent(DeterministicScoringAgent):
         role: RoleRequirement,
         packets: list[EvaluationPacket],
         top_n: int | None = None,
+        policy: RankingPolicy | None = None,
     ) -> list[DeterministicEvaluation]:
         consultants = [packet.consultant_profile for packet in packets]
-        ranked = rank_candidates(role, consultants, self._weights)
+        ranked = rank_candidates(role, consultants, self._weights, policy=policy)
         if top_n is not None:
             ranked = ranked[:top_n]
 

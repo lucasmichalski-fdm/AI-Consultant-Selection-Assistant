@@ -25,6 +25,7 @@ from src.io.data_loader import load_consultants_csv, load_roles_csv
 from src.io.normalizer import normalize_consultant_record, normalize_role_record
 from src.retrieval.candidate_retriever import retrieve_candidates
 from src.scoring.ranker import rank_candidates
+from src.scoring.policy import RankingPolicy
 
 
 @dataclass
@@ -99,6 +100,7 @@ class RankingPipeline:
         top_n: int | None = None,
         retrieve_k: int | None = None,
         use_component_pipeline: bool | None = None,
+        policy: RankingPolicy | None = None,
     ) -> RoleRankingResult:
         """Run deterministic retrieval + ranking for one role."""
 
@@ -114,10 +116,16 @@ class RankingPipeline:
         )
 
         if component_mode:
-            return self._run_milestone_b_componentized(role, consultants, actual_top_n, actual_retrieve_k)
+            return self._run_milestone_b_componentized(
+                role,
+                consultants,
+                actual_top_n,
+                actual_retrieve_k,
+                policy=policy,
+            )
 
         retrieved = retrieve_candidates(role, consultants, k=actual_retrieve_k)
-        ranked = rank_candidates(role, retrieved, self.weights)
+        ranked = rank_candidates(role, retrieved, self.weights, policy=policy)
         top_ranked = ranked[:actual_top_n]
 
         return RoleRankingResult(
@@ -130,7 +138,14 @@ class RankingPipeline:
             componentized_mode=False,
         )
 
-    def _run_milestone_b_componentized(self, role, consultants, top_n: int, retrieve_k: int) -> RoleRankingResult:
+    def _run_milestone_b_componentized(
+        self,
+        role,
+        consultants,
+        top_n: int,
+        retrieve_k: int,
+        policy: RankingPolicy | None = None,
+    ) -> RoleRankingResult:
         """Run Milestone B using the componentized agent architecture."""
 
         discovered = self.candidate_discover.discover(
@@ -148,10 +163,11 @@ class RankingPipeline:
                     retrieval_score=candidate.retrieval_score,
                     retrieval_reasons=candidate.retrieval_reasons,
                 ),
+                policy=policy,
             )
             packets.append(packet)
 
-        evaluations = self.deterministic_scoring_agent.rank(role, packets, top_n=top_n)
+        evaluations = self.deterministic_scoring_agent.rank(role, packets, top_n=top_n, policy=policy)
         comparisons = self.rank_comparison_agent.compare(evaluations)
 
         advice = [self.resume_upskill_advisor.advise(evaluation) for evaluation in evaluations]

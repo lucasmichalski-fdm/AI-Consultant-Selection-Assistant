@@ -7,6 +7,8 @@ import re
 
 from src.models import ConsultantProfile, RoleRequirement
 from src.scoring.location import is_onsite_or_hybrid_role, location_compatible
+from src.scoring.policy import RankingPolicy
+from src.scoring.evidence import match_terms_from_structured_and_text
 
 
 def _parse_date(value: str) -> datetime | None:
@@ -92,30 +94,53 @@ def evaluate_mandatory_context_evidence(role: RoleRequirement, consultant: Consu
     return "missing", [], required_targets
 
 
-def evaluate_constraints(role: RoleRequirement, consultant: ConsultantProfile) -> tuple[bool, list[str]]:
+def evaluate_constraints(
+    role: RoleRequirement,
+    consultant: ConsultantProfile,
+    policy: RankingPolicy | None = None,
+) -> tuple[bool, list[str]]:
     """Return (passes, violations) for hard constraints."""
 
+    active_policy = policy or RankingPolicy(domain_mode="hard")
     violations: list[str] = []
 
-    if role.required_years_experience > 0 and consultant.years_experience < role.required_years_experience:
+    if (
+        active_policy.experience_mode == "hard"
+        and role.required_years_experience > 0
+        and consultant.years_experience < role.required_years_experience
+    ):
         violations.append("CONSTRAINT_FAIL_EXPERIENCE_MIN")
 
-    if _requires_no_sponsorship(role):
+    if active_policy.authorization_mode == "hard" and _requires_no_sponsorship(role):
         auth = consultant.work_authorization_status.lower()
         if "sponsorship required" in auth and "no sponsorship required" not in auth:
             violations.append("CONSTRAINT_FAIL_AUTHORIZATION")
 
-    if is_onsite_or_hybrid_role(role):
-        if not location_compatible(role, consultant):
+    if active_policy.location_mode == "hard" and is_onsite_or_hybrid_role(role):
+        if not location_compatible(
+            role,
+            consultant,
+            enforce_office_schedule=active_policy.enforce_office_schedule,
+            allow_relocation_path=active_policy.allow_relocation_path,
+        ):
             violations.append("CONSTRAINT_FAIL_LOCATION")
 
     role_start = _parse_date(role.start_date)
     availability = _parse_date(consultant.availability_date)
-    if role_start and availability and availability > role_start:
+    if active_policy.start_date_mode == "hard" and role_start and availability and availability > role_start:
         violations.append("CONSTRAINT_FAIL_START_DATE")
 
+    if active_policy.certification_mode == "hard" and role.required_certs:
+        matched_required_certs = match_terms_from_structured_and_text(
+            role.required_certs,
+            consultant.normalized_certs,
+            consultant,
+        )
+        if len(matched_required_certs) < len({cert for cert in role.required_certs if cert}):
+            violations.append("CONSTRAINT_FAIL_CERTIFICATIONS")
+
     mandatory_status, _matches, required_targets = evaluate_mandatory_context_evidence(role, consultant)
-    if required_targets and mandatory_status == "missing":
+    if active_policy.domain_mode == "hard" and required_targets and mandatory_status == "missing":
         violations.append("CONSTRAINT_FAIL_MANDATORY_CONTEXT")
 
     return len(violations) == 0, violations

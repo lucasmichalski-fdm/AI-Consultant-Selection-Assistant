@@ -43,21 +43,31 @@ def _same_or_metro_state(role_state: str, consultant_state: str) -> bool:
     return False
 
 
-def location_compatible(role: RoleRequirement, consultant: ConsultantProfile) -> bool:
+def location_compatible(
+    role: RoleRequirement,
+    consultant: ConsultantProfile,
+    enforce_office_schedule: bool = True,
+    allow_relocation_path: bool = True,
+) -> bool:
     """Return True when location/work-mode logistics are feasible for the role."""
 
     if is_remote_role(role):
         return True
 
-    if _schedule_preference_score(consultant) <= 0.0:
+    if enforce_office_schedule and _schedule_preference_score(consultant) <= 0.0:
         return False
 
     in_commute_range = _same_or_metro_state(role.location_state, consultant.location_state)
-    relocation_path = role.relocation_allowed and consultant.willing_to_relocate
+    relocation_path = allow_relocation_path and role.relocation_allowed and consultant.willing_to_relocate
     return in_commute_range or relocation_path
 
 
-def location_alignment_score(role: RoleRequirement, consultant: ConsultantProfile) -> float:
+def location_alignment_score(
+    role: RoleRequirement,
+    consultant: ConsultantProfile,
+    enforce_office_schedule: bool = True,
+    allow_relocation_path: bool = True,
+) -> float:
     """Return normalized location fit score in [0, 1]."""
 
     preference = consultant.remote_preference.lower()
@@ -69,15 +79,20 @@ def location_alignment_score(role: RoleRequirement, consultant: ConsultantProfil
             return 1.0
         return 0.8
 
-    if not location_compatible(role, consultant):
+    if not location_compatible(
+        role,
+        consultant,
+        enforce_office_schedule=enforce_office_schedule,
+        allow_relocation_path=allow_relocation_path,
+    ):
         return 0.0
 
-    schedule = _schedule_preference_score(consultant)
+    schedule = _schedule_preference_score(consultant) if enforce_office_schedule else 1.0
 
     in_commute_range = _same_or_metro_state(role.location_state, consultant.location_state)
     if in_commute_range:
         proximity = 1.0
-    elif role.relocation_allowed and consultant.willing_to_relocate:
+    elif allow_relocation_path and role.relocation_allowed and consultant.willing_to_relocate:
         proximity = 0.6
     else:
         proximity = 0.0

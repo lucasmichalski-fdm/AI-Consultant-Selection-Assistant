@@ -1,5 +1,6 @@
 from src.config import ScoreWeights
 from src.models import ConsultantProfile, RoleRequirement
+from src.scoring.policy import RankingPolicy
 from src.scoring.ranker import rank_candidates
 
 
@@ -337,3 +338,137 @@ def test_ranker_adds_review_potential_signals_without_marking_requirement_met() 
     assert "REVIEW_POTENTIAL_SKILL_AIRFLOW" in ranked[0].reason_codes
     assert "REVIEW_POTENTIAL_TOOL_SNOWFLAKE" in ranked[0].reason_codes
     assert "REVIEW_POTENTIAL_CERT_AWS_CERTIFIED" in ranked[0].reason_codes
+
+
+def test_ranker_location_policy_soft_removes_hard_gate_but_keeps_scoring_signal() -> None:
+    role = RoleRequirement(
+        role_id="R-301",
+        raw={},
+        required_skills=["python", "sql"],
+        required_certs=["az-104"],
+        required_tools=["jira"],
+        required_domains=["banking"],
+        preferred_skills=[],
+        required_years_experience=5,
+        remote_or_onsite="Hybrid (2 days onsite)",
+        location_state="NC",
+        relocation_allowed=False,
+        start_date="2026-09-01",
+        must_have_constraints="None",
+        behavioral_importance={"communication": 2.0, "problem_solving": 2.0, "teamwork": 2.0, "adaptability": 2.0, "leadership": 2.0},
+    )
+
+    remote_only_high_fit = ConsultantProfile(
+        consultant_id="C-601",
+        raw={},
+        normalized_skills=["python", "sql"],
+        normalized_certs=["az-104"],
+        normalized_tools=["jira"],
+        normalized_domains=["banking"],
+        years_experience=8,
+        location_state="CA",
+        remote_preference="Remote Only",
+        availability_date="2026-08-20",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 4.5, "problem_solving": 4.5, "teamwork": 4.5, "adaptability": 4.5, "leadership": 4.5},
+    )
+    local_lower_fit = ConsultantProfile(
+        consultant_id="C-602",
+        raw={},
+        normalized_skills=["python"],
+        normalized_certs=[],
+        normalized_tools=["jira"],
+        normalized_domains=["banking"],
+        years_experience=5,
+        location_state="NC",
+        remote_preference="Hybrid",
+        availability_date="2026-08-20",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 3.0, "problem_solving": 3.0, "teamwork": 3.0, "adaptability": 3.0, "leadership": 3.0},
+    )
+
+    hard_ranked = rank_candidates(
+        role,
+        [remote_only_high_fit, local_lower_fit],
+        ScoreWeights(),
+        policy=RankingPolicy(location_mode="hard"),
+    )
+    soft_ranked = rank_candidates(
+        role,
+        [remote_only_high_fit, local_lower_fit],
+        ScoreWeights(),
+        policy=RankingPolicy(location_mode="soft"),
+    )
+
+    assert hard_ranked[0].consultant_id == "C-602"
+    assert "CONSTRAINT_FAIL_LOCATION" in hard_ranked[1].risk_flags
+
+    assert soft_ranked[0].consultant_id == "C-601"
+    assert "CONSTRAINT_FAIL_LOCATION" not in soft_ranked[0].risk_flags
+
+
+def test_ranker_certification_policy_hard_enforces_required_certs() -> None:
+    role = RoleRequirement(
+        role_id="R-302",
+        raw={},
+        required_skills=["python", "sql"],
+        required_certs=["az-104"],
+        required_tools=[],
+        required_domains=[],
+        preferred_skills=[],
+        required_years_experience=3,
+        remote_or_onsite="Remote",
+        location_state="",
+        relocation_allowed=True,
+        start_date="2026-09-01",
+        must_have_constraints="None",
+        behavioral_importance={"communication": 1.0, "problem_solving": 1.0, "teamwork": 1.0, "adaptability": 1.0, "leadership": 1.0},
+    )
+
+    missing_cert_high_fit = ConsultantProfile(
+        consultant_id="C-701",
+        raw={},
+        normalized_skills=["python", "sql"],
+        normalized_certs=[],
+        normalized_tools=[],
+        normalized_domains=[],
+        years_experience=9,
+        location_state="TX",
+        remote_preference="Remote Preferred",
+        availability_date="2026-08-10",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 4.0, "problem_solving": 4.0, "teamwork": 4.0, "adaptability": 4.0, "leadership": 4.0},
+    )
+    certified_lower_fit = ConsultantProfile(
+        consultant_id="C-702",
+        raw={},
+        normalized_skills=["python"],
+        normalized_certs=["az-104"],
+        normalized_tools=[],
+        normalized_domains=[],
+        years_experience=3,
+        location_state="TX",
+        remote_preference="Remote Preferred",
+        availability_date="2026-08-10",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 3.0, "problem_solving": 3.0, "teamwork": 3.0, "adaptability": 3.0, "leadership": 3.0},
+    )
+
+    soft_ranked = rank_candidates(
+        role,
+        [missing_cert_high_fit, certified_lower_fit],
+        ScoreWeights(),
+        policy=RankingPolicy(certification_mode="soft"),
+    )
+    hard_ranked = rank_candidates(
+        role,
+        [missing_cert_high_fit, certified_lower_fit],
+        ScoreWeights(),
+        policy=RankingPolicy(certification_mode="hard"),
+    )
+
+    assert soft_ranked[0].consultant_id == "C-701"
+    assert "CONSTRAINT_FAIL_CERTIFICATIONS" not in soft_ranked[0].risk_flags
+
+    assert hard_ranked[0].consultant_id == "C-702"
+    assert "CONSTRAINT_FAIL_CERTIFICATIONS" in hard_ranked[1].risk_flags
