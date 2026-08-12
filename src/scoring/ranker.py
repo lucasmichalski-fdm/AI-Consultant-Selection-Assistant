@@ -7,6 +7,7 @@ from datetime import datetime
 from src.config import ScoreWeights
 from src.models import ConsultantProfile, RankedCandidate, RoleRequirement, ScoreCard
 from src.scoring.constraints import evaluate_constraints
+from src.scoring.evidence import match_terms_from_structured_and_text
 from src.scoring.location import location_alignment_score
 from src.scoring.reason_codes import build_reason_codes
 
@@ -17,6 +18,13 @@ def _ratio(required: list[str], observed: list[str]) -> float:
     required_set = set(required)
     observed_set = set(observed)
     return len(required_set.intersection(observed_set)) / len(required_set)
+
+
+def _evidence_ratio(required: list[str], structured_observed: list[str], consultant: ConsultantProfile) -> float:
+    if not required:
+        return 1.0
+    matched = match_terms_from_structured_and_text(required, structured_observed, consultant)
+    return len(matched) / len({term for term in required if term})
 
 
 def _parse_date(value: str) -> datetime | None:
@@ -56,7 +64,7 @@ def _experience_score(role: RoleRequirement, consultant: ConsultantProfile) -> f
 
 
 def _domain_score(role: RoleRequirement, consultant: ConsultantProfile) -> float:
-    direct = _ratio(role.required_domains, consultant.normalized_domains)
+    direct = _evidence_ratio(role.required_domains, consultant.normalized_domains, consultant)
     if direct > 0:
         return direct
 
@@ -101,12 +109,13 @@ def _prior_rating_score(consultant: ConsultantProfile) -> float:
 
 def _score_components(role: RoleRequirement, consultant: ConsultantProfile) -> ScoreCard:
     required_bundle = role.required_certs + role.required_tools
+    observed_bundle = consultant.normalized_certs + consultant.normalized_tools
 
     return ScoreCard(
-        required_skills=_ratio(role.required_skills, consultant.normalized_skills),
-        required_certs_tools=_ratio(required_bundle, consultant.normalized_certs + consultant.normalized_tools),
+        required_skills=_evidence_ratio(role.required_skills, consultant.normalized_skills, consultant),
+        required_certs_tools=_evidence_ratio(required_bundle, observed_bundle, consultant),
         domain=_domain_score(role, consultant),
-        preferred_skills=_ratio(role.preferred_skills, consultant.normalized_skills),
+        preferred_skills=_evidence_ratio(role.preferred_skills, consultant.normalized_skills, consultant),
         experience=_experience_score(role, consultant),
         behavioral=_behavioral_score(role, consultant),
         availability_location=_availability_location_score(role, consultant),
@@ -128,20 +137,14 @@ def _weighted_score(card: ScoreCard, weights: ScoreWeights) -> float:
 
 
 def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile], weights: ScoreWeights) -> list[RankedCandidate]:
-    """Rank candidates deterministically using weighted score components."""
+    """Rank candidates using a two-pass flow: fit first, eligibility second."""
 
-    scored: list[tuple[RankedCandidate, ScoreCard, int, str]] = []
+    # Pass 1: compute fit score independently of mandatory eligibility.
+    scored: list[tuple[RankedCandidate, ScoreCard, int, str, bool]] = []
     for consultant in consultants:
         passes, violations = evaluate_constraints(role, consultant)
         card = _score_components(role, consultant)
         raw_score = _weighted_score(card, weights)
-
-        # Guardrail: do not allow low must-have coverage near the top.
-        if card.required_skills < 0.60:
-            raw_score = min(raw_score, 40.0)
-
-        if not passes:
-            raw_score = min(raw_score, 5.0)
 
         reasons = build_reason_codes(role, consultant, card, violations)
 
@@ -164,10 +167,15 @@ def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile],
         )
 
         availability_sort_key = consultant.availability_date or "9999-12-31"
-        scored.append((ranked, card, len(violations), availability_sort_key))
+        scored.append((ranked, card, len(violations), availability_sort_key, passes))
 
-    scored.sort(
-        key=lambda item: (
+    # Pass 2: eligibility gate for recommendation ordering.
+    # Eligible candidates are ranked first by fit; ineligible remain visible after.
+    eligible = [item for item in scored if item[4]]
+    ineligible = [item for item in scored if not item[4]]
+
+    def _sort_key(item: tuple[RankedCandidate, ScoreCard, int, str, bool]) -> tuple:
+        return (
             -item[0].fit_score,
             -item[1].required_skills,
             item[2],
@@ -175,10 +183,13 @@ def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile],
             item[3],
             item[0].consultant_id,
         )
-    )
+
+    eligible.sort(key=_sort_key)
+    ineligible.sort(key=_sort_key)
+    ordered_scored = eligible + ineligible
 
     ordered: list[RankedCandidate] = []
-    for idx, (ranked, _, _, _) in enumerate(scored, start=1):
+    for idx, (ranked, _, _, _, _) in enumerate(ordered_scored, start=1):
         ranked.rank = idx
         ordered.append(ranked)
     return ordered

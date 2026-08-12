@@ -1,5 +1,5 @@
 from src.models import ConsultantProfile, RoleRequirement
-from src.scoring.constraints import evaluate_constraints
+from src.scoring.constraints import evaluate_constraints, evaluate_mandatory_context_evidence
 
 
 def test_constraints_pass_when_core_rules_met() -> None:
@@ -79,3 +79,46 @@ def test_constraints_fail_when_remote_only_candidate_for_onsite_role() -> None:
     passes, violations = evaluate_constraints(role, consultant)
     assert passes is False
     assert "CONSTRAINT_FAIL_LOCATION" in violations
+
+
+def test_mandatory_context_explicit_or_proxy_evidence() -> None:
+    role = RoleRequirement(
+        role_id="R-004",
+        raw={"client_industry": "Healthcare"},
+        required_domains=["healthcare"],
+        must_have_constraints="Prior healthcare data experience (HIPAA-regulated) is mandatory.",
+    )
+
+    explicit = ConsultantProfile(
+        consultant_id="C-010",
+        raw={"resume_text": "Built healthcare data pipelines for a regional provider."},
+        normalized_domains=[],
+    )
+    status_explicit, _, _ = evaluate_mandatory_context_evidence(role, explicit)
+    assert status_explicit == "explicit"
+
+    proxy = ConsultantProfile(
+        consultant_id="C-011",
+        raw={"resume_text": "Built analytics platforms for enterprise clients."},
+        normalized_domains=["healthcare"],
+    )
+    status_proxy, _, _ = evaluate_mandatory_context_evidence(role, proxy)
+    assert status_proxy == "proxy"
+
+
+def test_mandatory_context_missing_evidence_fails_constraints() -> None:
+    role = RoleRequirement(
+        role_id="R-005",
+        raw={"client_industry": "Healthcare"},
+        required_domains=["healthcare"],
+        must_have_constraints="Prior healthcare data experience (HIPAA-regulated) is mandatory.",
+    )
+
+    consultant = ConsultantProfile(
+        consultant_id="C-012",
+        raw={"resume_text": "Retail data warehouse specialist."},
+        normalized_domains=["retail"],
+    )
+    passes, violations = evaluate_constraints(role, consultant)
+    assert passes is False
+    assert "CONSTRAINT_FAIL_MANDATORY_CONTEXT" in violations

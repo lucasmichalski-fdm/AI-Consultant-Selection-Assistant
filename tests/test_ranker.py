@@ -50,7 +50,6 @@ def test_ranker_returns_deterministic_order() -> None:
     ]
     ranked = rank_candidates(role, consultants, ScoreWeights())
     assert [r.consultant_id for r in ranked] == ["C-002", "C-010"]
-    assert ranked[0].fit_score > ranked[1].fit_score
     assert ranked[0].score_components["required_skills"] >= 1.0
     assert "CONSTRAINT_FAIL_AUTHORIZATION" in ranked[1].risk_flags
 
@@ -105,7 +104,6 @@ def test_ranker_prefers_location_aligned_candidate_when_skills_similar() -> None
     ranked = rank_candidates(role, [misaligned, aligned], ScoreWeights())
 
     assert ranked[0].consultant_id == "C-100"
-    assert ranked[0].fit_score > ranked[1].fit_score
     assert "CONSTRAINT_FAIL_LOCATION" in ranked[1].risk_flags
 
 
@@ -197,5 +195,139 @@ def test_ranker_prefers_local_candidate_over_relocation_path() -> None:
     ranked = rank_candidates(role, [relocating_candidate, local_candidate], ScoreWeights())
 
     assert ranked[0].consultant_id == "C-300"
-    assert ranked[0].fit_score > ranked[1].fit_score
     assert "LOCATION_RELOCATION_PATH" in ranked[1].reason_codes
+
+
+def test_ranker_two_pass_keeps_higher_fit_but_moves_ineligible_after_eligible() -> None:
+    role = RoleRequirement(
+        role_id="R-104",
+        raw={},
+        required_skills=["python", "sql"],
+        required_certs=[],
+        required_tools=[],
+        required_domains=["banking"],
+        preferred_skills=[],
+        required_years_experience=5,
+        remote_or_onsite="Hybrid (2 days onsite)",
+        location_state="NC",
+        relocation_allowed=False,
+        start_date="2026-09-01",
+        must_have_constraints="US work authorization without sponsorship",
+        behavioral_importance={"communication": 2.0, "problem_solving": 2.0, "teamwork": 2.0, "adaptability": 2.0, "leadership": 2.0},
+    )
+
+    ineligible_high_fit = ConsultantProfile(
+        consultant_id="C-401",
+        raw={},
+        normalized_skills=["python", "sql"],
+        normalized_domains=["banking"],
+        years_experience=8,
+        location_state="CA",
+        remote_preference="Remote Only",
+        availability_date="2026-08-15",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 4.5, "problem_solving": 4.5, "teamwork": 4.5, "adaptability": 4.5, "leadership": 4.5},
+    )
+
+    eligible_lower_fit = ConsultantProfile(
+        consultant_id="C-402",
+        raw={},
+        normalized_skills=["python"],
+        normalized_domains=["banking"],
+        years_experience=5,
+        location_state="NC",
+        remote_preference="Hybrid",
+        availability_date="2026-08-20",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 3.0, "problem_solving": 3.0, "teamwork": 3.0, "adaptability": 3.0, "leadership": 3.0},
+    )
+
+    ranked = rank_candidates(role, [ineligible_high_fit, eligible_lower_fit], ScoreWeights())
+
+    assert ranked[0].consultant_id == "C-402"
+    assert "CONSTRAINT_FAIL_LOCATION" in ranked[1].risk_flags
+    assert ranked[1].fit_score > ranked[0].fit_score
+
+
+def test_ranker_extracts_required_skills_from_resume_and_project_evidence() -> None:
+    role = RoleRequirement(
+        role_id="R-201",
+        raw={},
+        required_skills=["airflow", "snowflake"],
+        required_certs=[],
+        required_tools=[],
+        required_domains=["healthcare"],
+        preferred_skills=[],
+        required_years_experience=1,
+        remote_or_onsite="Remote",
+        location_state="TN",
+        relocation_allowed=False,
+        start_date="2026-09-01",
+        must_have_constraints="Prior healthcare data experience is mandatory.",
+        behavioral_importance={"communication": 1.0, "problem_solving": 1.0, "teamwork": 1.0, "adaptability": 1.0, "leadership": 1.0},
+    )
+
+    consultant = ConsultantProfile(
+        consultant_id="C-500",
+        raw={
+            "project_experience_summary": "Built Spark and Airflow pipelines feeding a Snowflake warehouse.",
+            "resume_text": "Delivered healthcare analytics data pipelines.",
+        },
+        normalized_skills=["spark"],
+        normalized_domains=["healthcare"],
+        years_experience=5,
+        location_state="TN",
+        remote_preference="Remote Preferred",
+        availability_date="2026-08-10",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 4.0, "problem_solving": 4.0, "teamwork": 4.0, "adaptability": 4.0, "leadership": 4.0},
+    )
+
+    ranked = rank_candidates(role, [consultant], ScoreWeights())
+
+    assert ranked[0].score_components["required_skills"] == 1.0
+    assert "GAP_REQUIRED_SKILL_AIRFLOW" not in ranked[0].reason_codes
+    assert "GAP_REQUIRED_SKILL_SNOWFLAKE" not in ranked[0].reason_codes
+
+
+def test_ranker_adds_review_potential_signals_without_marking_requirement_met() -> None:
+    role = RoleRequirement(
+        role_id="R-202",
+        raw={},
+        required_skills=["airflow"],
+        required_certs=["aws certified"],
+        required_tools=["snowflake"],
+        required_domains=[],
+        preferred_skills=[],
+        required_years_experience=1,
+        remote_or_onsite="Remote",
+        location_state="TN",
+        relocation_allowed=False,
+        start_date="2026-09-01",
+        must_have_constraints="None",
+        behavioral_importance={"communication": 1.0, "problem_solving": 1.0, "teamwork": 1.0, "adaptability": 1.0, "leadership": 1.0},
+    )
+
+    consultant = ConsultantProfile(
+        consultant_id="C-501",
+        raw={
+            "project_experience_summary": "Implemented workflow orchestration with Prefect and designed modern warehouse models.",
+            "resume_text": "Completed cloud certification prep and earned a provider badge.",
+        },
+        normalized_skills=["python"],
+        normalized_tools=["prefect"],
+        years_experience=4,
+        location_state="TN",
+        remote_preference="Remote Preferred",
+        availability_date="2026-08-10",
+        work_authorization_status="US Citizen",
+        behavioral_scores={"communication": 4.0, "problem_solving": 4.0, "teamwork": 4.0, "adaptability": 4.0, "leadership": 4.0},
+    )
+
+    ranked = rank_candidates(role, [consultant], ScoreWeights())
+
+    assert ranked[0].score_components["required_skills"] == 0.0
+    assert "GAP_REQUIRED_SKILL_AIRFLOW" in ranked[0].reason_codes
+    assert "REVIEW_POTENTIAL_SKILL_AIRFLOW" in ranked[0].reason_codes
+    assert "REVIEW_POTENTIAL_TOOL_SNOWFLAKE" in ranked[0].reason_codes
+    assert "REVIEW_POTENTIAL_CERT_AWS_CERTIFIED" in ranked[0].reason_codes
