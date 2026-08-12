@@ -21,12 +21,14 @@ def main() -> None:
     parser.add_argument("--role-id", required=False, default="R-001")
     parser.add_argument("--top-n", required=False, type=int, default=5)
     parser.add_argument("--retrieve-k", required=False, type=int, default=25)
+    parser.add_argument("--componentized", action="store_true")
     args = parser.parse_args()
 
     result = RankingPipeline(project_root=ROOT).run_milestone_b_for_role(
         role_id=args.role_id,
         top_n=args.top_n,
         retrieve_k=args.retrieve_k,
+        use_component_pipeline=args.componentized,
     )
 
     payload = {"milestone": "B", **asdict(result)}

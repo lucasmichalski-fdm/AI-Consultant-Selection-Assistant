@@ -15,6 +15,7 @@ class Settings:
     retrieve_k: int = 25
     confidence_threshold: float = 0.70
     max_rationale_tokens: int = 450
+    component_pipeline_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -34,10 +35,17 @@ class ScoreWeights:
 def load_settings() -> Settings:
     """Load settings from environment with safe defaults."""
 
+    def _as_bool(value: str | None, default: bool = False) -> bool:
+        if value is None:
+            return default
+        normalized = value.strip().lower()
+        return normalized in {"1", "true", "yes", "y", "on"}
+
     return Settings(
         ai_provider=os.getenv("AI_PROVIDER", "mock"),
         top_n=int(os.getenv("TOP_N", "5")),
         retrieve_k=int(os.getenv("RETRIEVE_K", "25")),
         confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.70")),
         max_rationale_tokens=int(os.getenv("MAX_RATIONALE_TOKENS", "450")),
+        component_pipeline_enabled=_as_bool(os.getenv("COMPONENT_PIPELINE_ENABLED"), False),
     )

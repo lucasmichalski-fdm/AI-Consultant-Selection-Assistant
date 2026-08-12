@@ -245,7 +245,13 @@ def test_ranker_two_pass_keeps_higher_fit_but_moves_ineligible_after_eligible() 
     ranked = rank_candidates(role, [ineligible_high_fit, eligible_lower_fit], ScoreWeights())
 
     assert ranked[0].consultant_id == "C-402"
+    assert ranked[0].eligibility_status == "passed"
+    assert ranked[0].eligibility_basis == "hard_constraints_only"
+    assert ranked[0].ranking_tier == 0
     assert "CONSTRAINT_FAIL_LOCATION" in ranked[1].risk_flags
+    assert ranked[1].eligibility_status == "failed"
+    assert ranked[1].ranking_tier == 1
+    assert ranked[0].ranking_key[0] < ranked[1].ranking_key[0]
     assert ranked[1].fit_score > ranked[0].fit_score
 
 

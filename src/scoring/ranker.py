@@ -152,6 +152,10 @@ def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile],
             rank=0,
             consultant_id=consultant.consultant_id,
             fit_score=round(raw_score, 2),
+            eligibility_status="passed" if passes else "failed",
+            ranking_tier=0 if passes else 1,
+            risk_tier=len(violations),
+            ranking_key=[],
             score_components={
                 "required_skills": round(card.required_skills, 4),
                 "required_certs_tools": round(card.required_certs_tools, 4),
@@ -167,6 +171,15 @@ def rank_candidates(role: RoleRequirement, consultants: list[ConsultantProfile],
         )
 
         availability_sort_key = consultant.availability_date or "9999-12-31"
+        ranked.ranking_key = [
+            ranked.ranking_tier,
+            -ranked.fit_score,
+            -round(card.required_skills, 4),
+            len(violations),
+            -round(card.required_certs_tools, 4),
+            availability_sort_key,
+            ranked.consultant_id,
+        ]
         scored.append((ranked, card, len(violations), availability_sort_key, passes))
 
     # Pass 2: eligibility gate for recommendation ordering.

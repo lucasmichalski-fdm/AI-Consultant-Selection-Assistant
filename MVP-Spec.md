@@ -22,6 +22,7 @@ The MVP implementation should follow these principles:
 - Explicit tradeoffs: when strengths and gaps coexist, scoring and reason codes should make that visible.
 - Traceable by default: persist input role, scoring components, constraint outcomes, and final ranking for auditability.
 - Safety and fairness by design: use role-relevant capability and logistics signals only; ignore names and protected attributes.
+- Evidence tiers, not over-claims: keep confirmed and potential evidence separate. Confirmed evidence affects scoring. Potential evidence is review-only and never auto-counted as requirement coverage.
 
 ## 2. Inputs and Data Sources
 
@@ -61,6 +62,19 @@ Each consultant is compared to the role on these dimensions:
 
 Must-have constraints are hard rules and override weighted ranking.
 
+## 4.1 Componentized Model Split
+
+The MVP model stack is split into five components with explicit handoffs:
+1. candidate-discover: scans consultant batches and returns potentially relevant candidates.
+2. candidate-fit-evaluator: evaluates one consultant against one role and emits a standardized Evaluation Packet.
+3. deterministic-scoring-agent: computes component scores, constraints, and final rank ordering.
+4. rank-comparison-agent: explains already-computed rank order and score deltas.
+5. resume-upskill-advisor: gives consultant-specific role-positioning and realistic upskill suggestions.
+
+Boundary rule:
+- Only the deterministic-scoring-agent is authoritative for ranking outcomes.
+- The comparison and upskill components are explanatory and advisory only.
+
 ## 5. Preprocessing and Normalization
 
 Before scoring:
@@ -68,7 +82,9 @@ Before scoring:
 2. Normalize case and whitespace for all text comparisons.
 3. Apply controlled alias mapping (for example: `K8s` -> `Kubernetes`, `Node` -> `Node.js`, `CI Integration` -> `CI/CD`).
 4. Treat blank values as unknown/not available, never as zero.
-5. Optionally enrich consultant skill tokens from `resume_text` when structured skill fields are sparse.
+5. Enrich confirmed evidence from both structured fields and normalized free text (`resume_text`, `project_experience_summary`, `notes`) using exact normalized phrase matching.
+6. Compute potential evidence cues for still-missing requirements using loose matching (related tool hints, partial token overlap, and soft lexical similarity).
+7. Persist evidence provenance and tier (`confirmed` or `potential_unconfirmed`) per requirement for auditability.
 
 ## 6. Constraint Gate (Hard Rule Stage)
 
@@ -117,18 +133,23 @@ Where each `normalized_component_i` is in `[0,1]`.
 - Availability/location: credit for feasible start and logistics alignment.
 - Prior client rating: use only when available; unknown remains neutral.
 
+Evidence-tier rule:
+- Only `confirmed` evidence contributes to numeric component scores.
+- `potential_unconfirmed` evidence never increases fit score and never clears a hard requirement.
+
 ## 8. Ranking Logic
 
-1. Build candidate pool.
-2. Apply hard constraint gate.
-3. Compute weighted fit for remaining candidates.
+1. candidate-discover builds a potential candidate pool.
+2. candidate-fit-evaluator produces one Evaluation Packet per candidate-role pair.
+3. deterministic-scoring-agent applies hard constraint gate and weighted fit scoring.
 4. Sort descending by fit score.
 5. Apply deterministic tie-breakers in order:
    - higher required skill coverage
    - fewer must-have risk flags
    - better required certification/tool coverage
    - earlier feasible availability date
-6. Return top N with score breakdown and reason codes.
+6. rank-comparison-agent generates human-readable ranking comparisons.
+7. Return top N with score breakdown, reason codes, and optional advisory outputs.
 
 ## 9. Reason Codes for Comparison and Ranking
 
@@ -139,6 +160,15 @@ Every ranked result should include compact reason codes, for example:
 - `EXP_BELOW_TARGET_BY_1Y`
 - `CONSTRAINT_FAIL_ONSITE_STATE_MISMATCH`
 
+Also include review-only potential signals when relevant, for example:
+- `REVIEW_POTENTIAL_SKILL_AIRFLOW`
+- `REVIEW_POTENTIAL_TOOL_SNOWFLAKE`
+- `REVIEW_POTENTIAL_CERT_AWS_CERTIFIED`
+
+Interpretation rule:
+- `GAP_*` and `CONSTRAINT_FAIL_*` remain authoritative for requirement status.
+- `REVIEW_POTENTIAL_*` indicates adjacent evidence that should be discussed with the candidate and validated by recruiter/interviewer.
+
 Reason codes must be generated from dataset fields, not free-form opinion.
 
 ## 10. Baseline Validation
@@ -148,6 +178,8 @@ Minimum validation for this starter spec:
 2. Confirm any must-have violations are excluded or bottom-capped consistently.
 3. Verify score stability across repeated runs with same inputs.
 4. Compare top-ranked outputs against historical outcomes as a sanity check, while treating historical human scores as noisy signal.
+5. Verify strict evidence behavior: potential signals do not change fit score or remove missing-gap flags.
+6. Verify review-only behavior: potential signals are present only when corresponding requirements remain unconfirmed.
 
 ## 11. Non-Goals (Current Starter Scope)
 

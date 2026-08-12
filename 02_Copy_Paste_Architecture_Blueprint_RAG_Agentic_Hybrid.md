@@ -72,6 +72,14 @@ Decision for Squad 1:
   - deterministic scoring envelope
   - explanation completeness checks
   - low-confidence trigger for human review
+  - evidence-tier separation: confirmed evidence for scoring, potential evidence for review only
+
+### Named model components (recommended)
+- candidate-discover: high-recall candidate identification from consultant batches
+- candidate-fit-evaluator: one-role/one-consultant Evaluation Packet creator
+- deterministic-scoring-agent: authoritative rank scorer and constraint gate
+- rank-comparison-agent: ranking explanation and ordering deltas
+- resume-upskill-advisor: consultant improvement guidance and realistic next steps
 
 ## 2.1) Challenge-Specific Data Model
 
@@ -151,6 +159,7 @@ Decision for Squad 1:
       "fitScore": 0,
       "matchedSkills": ["string"],
       "matchedCertifications": ["string"],
+      "potentialSignals": ["string"],
       "behavioralFit": "high|medium|low",
       "gaps": ["string"],
       "rationale": "string",
@@ -242,10 +251,12 @@ function handleAgentic(request):
 
 ### Flow
 1. Agent parses role request into structured constraints.
-2. Retrieval pulls top consultant profiles and relevant context docs.
-3. Scoring step computes candidate fit (skills, certifications, behavior, experience, constraints).
-4. LLM produces explainable rationale and skill gap notes.
-5. Return ranked shortlist, confidence, citations, and human review flags.
+2. candidate-discover pulls top consultant profiles and relevance metadata.
+3. candidate-fit-evaluator creates Evaluation Packets for candidate-role pairs.
+4. deterministic-scoring-agent computes fit and rank using hard constraints + weighted components.
+5. rank-comparison-agent generates ranking explanations from deterministic outputs.
+6. resume-upskill-advisor generates consultant-specific improvement guidance.
+7. Return ranked shortlist, confidence, citations, and human review flags.
 
 ### Scoring logic (deterministic)
 Use a deterministic score before final LLM explanation to reduce subjectivity.
@@ -266,16 +277,22 @@ Practical guardrail:
 - if $S_{must} < 0.6$, candidate cannot rank in top 3 unless explicit override is explained.
 - if confidence < threshold, system must return "human review required" flag.
 
+Evidence-tier guardrail:
+- Confirmed evidence can satisfy requirements and affect scores.
+- Potential evidence (for example adjacent tools or vague workflow language) can only emit review notes such as `REVIEW_POTENTIAL_*` and must not clear a gap.
+
 ### Pseudocode
 ```text
 function handleHybrid(request):
   role = parseRoleRequest(request.input.text)
-  candidates = retrieveCandidates(role, k=25)
-  filtered = applyHardConstraints(candidates, role)
-  scored = deterministicRank(filtered, role)
+  discovered = candidateDiscover(role, k=25)
+  packets = buildEvaluationPackets(discovered, role)
+  scored = deterministicScoringAgent(packets, role)
   top = takeTop(scored, 5)
+  comparisons = rankComparisonAgent(top, packets)
+  advisory = resumeUpskillAdvisor(top, role, packets)
   evidence = retrieveContextDocs(role)
-  rationale = generateExplanations(top, role, evidence)
+  rationale = generateExplanations(top, role, evidence, comparisons, advisory)
   return shapeResponse(rationale, evidence)
 ```
 

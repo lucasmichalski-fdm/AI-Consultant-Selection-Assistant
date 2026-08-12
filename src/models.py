@@ -69,6 +69,17 @@ class RankedCandidate:
     rank: int
     consultant_id: str
     fit_score: float
+    eligibility_status: str = "unknown"
+    eligibility_basis: str = "hard_constraints_only"
+    eligibility_explanation: str = (
+        "eligibility_status is driven only by hard constraints; required skill/tool/cert gaps affect fit_score but are non-gating unless encoded as hard constraints."
+    )
+    ranking_tier: int = 1
+    risk_tier: int = 0
+    ranking_key: list[Any] = field(default_factory=list)
+    ranking_key_semantics: str = (
+        "[ranking_tier, -fit_score, -required_skills, risk_tier, -required_certs_tools, availability_date, consultant_id]"
+    )
     score_components: dict[str, float] = field(default_factory=dict)
     reason_codes: list[str] = field(default_factory=list)
     risk_flags: list[str] = field(default_factory=list)
